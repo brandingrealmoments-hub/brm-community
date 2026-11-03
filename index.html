@@ -37,7 +37,9 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <div class="notice"><span>INTERACTIVE PREVIEW · SIMULATED DATA ONLY</span><span>No live payments · No Square connection · Resets on reload</span></div>
 <header><div class="brand"><div class="mark">b</div><div>BRMMONEY<small>COMMUNITY</small></div></div><span class="pill">Demo customer</span></header>
 <nav aria-label="Main navigation">
-<button class="active" data-tab="wallet">My wallet</button><button data-tab="market">Marketplace</button><button data-tab="transactions">Transactions</button><button data-tab="community">Community</button><button data-tab="owner">Owner preview</button>
+<button class="active" data-tab="wallet">My wallet</button><button data-tab="market">Marketplace</button><button data-tab="transactions">Transactions</button><button data-tab="community">Community</button>
+<button data-tab="member">Member Sign In</button>
+<button data-tab="owner">Owner preview</button>
 </nav>
 <main>
 <section id="wallet" class="panel active">
@@ -93,11 +95,44 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     </p>
   </div>
 </section>
+<section id="member" class="panel">
+  <div class="card">
+    <div class="eyebrow">BRMMONEY COMMUNITY</div>
+    <h1>Member Sign In</h1>
+    <p class="muted">Create your account or sign in to your community.</p>
 
+    <label for="memberEmail">Email address</label>
+    <input id="memberEmail" type="email" placeholder="Enter your email" autocomplete="email">
+
+    <label for="memberPassword">Password</label>
+    <input id="memberPassword" type="password" placeholder="At least 8 characters" autocomplete="current-password">
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <button class="btn" id="memberSignUp">Create Account</button>
+      <button class="btn" id="memberSignIn">Sign In</button>
+      <button class="btn" id="memberSignOut" hidden>Sign Out</button>
+    </div>
+
+    <p id="memberMessage" class="muted" aria-live="polite">
+      Your account will be protected by Supabase authentication.
+    </p>
+    <p id="memberStatus" class="muted">You are not signed in.</p>
+  </div>
+</section>
 <section id="owner" class="panel"><div class="card"><div class="eyebrow">OWNER PREVIEW</div><h1>Administrator controls</h1><p class="muted">Owner access is simulated. This is not secure authentication.</p><div class="activity"><span>Credit package</span><b>$5 = 500 BRM</b></div><div class="activity"><span>Expiration</span><b>Unset / disabled</b></div><div class="activity"><span>Refunds and chargebacks</span><b>Manual review</b></div><div class="activity"><span>Product eligibility</span><b>Demo only</b></div><p>In a live system, only the authenticated owner should be able to change balances, prices, eligible products, and system settings.</p></div></section>
 </main>
 <footer><b>BRMMONEY Community · Concept preview</b><br>All demo data stays in memory and resets on reload. No payment credentials, real customer data, live wallet, or deployed backend. BRM credits are not publicly traded cryptocurrency or an investment. Transfers and cash-out are not offered; applicable legal exceptions require review.<br><br>Proposed rules, not a final legal policy. Expiration is unset and disabled. Refund and chargeback events go to review; automatic reversals are disabled.</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// BRMMONEY Community — Supabase connection
+const SUPABASE_URL = "https://xsmmjtbzplxswzaxufqx.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_MJCc4EAAIHkiIzjk2xn1Ng_naRtEoI4";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
 const canvas = document.getElementById("communityChart");
 const ctx = canvas.getContext("2d");
 
@@ -161,5 +196,94 @@ function drawCommunityChart() {
 drawCommunityChart();
 function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+// BRMMONEY MEMBER ACCOUNT FUNCTIONS
+
+const memberEmail = document.getElementById("memberEmail");
+const memberPassword = document.getElementById("memberPassword");
+const memberMessage = document.getElementById("memberMessage");
+const memberStatus = document.getElementById("memberStatus");
+
+function updateMemberStatus(user) {
+  if (user) {
+    memberStatus.textContent = "Signed in as: " + user.email;
+    document.getElementById("memberSignOut").hidden = false;
+  } else {
+    memberStatus.textContent = "You are not signed in.";
+    document.getElementById("memberSignOut").hidden = true;
+  }
+}
+
+document.getElementById("memberSignUp").addEventListener("click", async () => {
+  const email = memberEmail.value.trim();
+  const password = memberPassword.value;
+
+  if (!email || password.length < 8) {
+    memberMessage.textContent = "Enter a valid email and a password of at least 8 characters.";
+    return;
+  }
+
+  memberMessage.textContent = "Creating your account...";
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    memberMessage.textContent = error.message;
+    return;
+  }
+
+  memberMessage.textContent = data.session
+    ? "Your account has been created and you are signed in!"
+    : "Account created! Check your email for a confirmation link.";
+
+  updateMemberStatus(data.user);
+});
+
+document.getElementById("memberSignIn").addEventListener("click", async () => {
+  const email = memberEmail.value.trim();
+  const password = memberPassword.value;
+
+  if (!email || !password) {
+    memberMessage.textContent = "Enter your email and password.";
+    return;
+  }
+
+  memberMessage.textContent = "Signing in...";
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    memberMessage.textContent = error.message;
+    return;
+  }
+
+  memberMessage.textContent = "Welcome to BRMMONEY Community!";
+  updateMemberStatus(data.user);
+});
+
+document.getElementById("memberSignOut").addEventListener("click", async () => {
+  const { error } = await supabaseClient.auth.signOut();
+
+  if (error) {
+    memberMessage.textContent = error.message;
+    return;
+  }
+
+  memberMessage.textContent = "You have signed out.";
+  updateMemberStatus(null);
+});
+
+supabaseClient.auth.getSession().then(({ data }) => {
+  updateMemberStatus(data.session?.user || null);
+});
+
+supabaseClient.auth.onAuthStateChange((_event, session) => {
+  updateMemberStatus(session?.user || null);
+});
 </script>
 </body></html>
