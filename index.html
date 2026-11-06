@@ -110,6 +110,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
       <button class="btn" id="memberSignUp">Create Account</button>
       <button class="btn" id="memberSignIn">Sign In</button>
+      <button class="btn" id="memberForgotPassword">Forgot Password?</button>
       <button class="btn" id="memberSignOut" hidden>Sign Out</button>
     </div>
 
@@ -292,7 +293,28 @@ document.getElementById("memberSignIn").addEventListener("click", async () => {
   memberMessage.textContent = "Welcome to BRMMONEY Community!";
   updateMemberStatus(data.user);
 });
+document.getElementById("memberForgotPassword").addEventListener("click", async () => {
+  const email = memberEmail.value.trim();
 
+  if (!email) {
+    memberMessage.textContent = "Enter your email address first.";
+    return;
+  }
+
+  memberMessage.textContent = "Sending password reset email...";
+
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://brandingrealmoments-hub.github.io/brm-community/"
+  });
+
+  if (error) {
+    memberMessage.textContent = error.message;
+    return;
+  }
+
+  memberMessage.textContent =
+    "Password reset email sent! Check your inbox and follow the link.";
+});
 document.getElementById("memberSignOut").addEventListener("click", async () => {
   const { error } = await supabaseClient.auth.signOut();
 
