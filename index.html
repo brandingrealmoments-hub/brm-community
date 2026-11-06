@@ -203,13 +203,40 @@ const memberPassword = document.getElementById("memberPassword");
 const memberMessage = document.getElementById("memberMessage");
 const memberStatus = document.getElementById("memberStatus");
 
-function updateMemberStatus(user) {
+async function updateMemberStatus(user) {
+  const signOutButton = document.getElementById("memberSignOut");
+  const balanceDisplay = document.getElementById("balance");
+  const dollarDisplay = document.getElementById("dollar");
+
   if (user) {
     memberStatus.textContent = "Signed in as: " + user.email;
-    document.getElementById("memberSignOut").hidden = false;
+    signOutButton.hidden = false;
+
+    memberMessage.textContent = "Loading your BRMMONEY wallet...";
+
+    const { data, error } = await supabaseClient
+      .from("brm_wallet_balances")
+      .select("brm_balance")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      memberMessage.textContent = "Wallet loading error: " + error.message;
+      return;
+    }
+
+    const balance = Number(data?.brm_balance || 0);
+
+    balanceDisplay.innerHTML =
+      balance.toLocaleString() + " <span>BRM</span>";
+
+    dollarDisplay.textContent =
+      "$" + (balance / 100).toFixed(2) + " toward eligible products";
+
+    memberMessage.textContent = "Your wallet is connected!";
   } else {
     memberStatus.textContent = "You are not signed in.";
-    document.getElementById("memberSignOut").hidden = true;
+    signOutButton.hidden = true;
   }
 }
 
