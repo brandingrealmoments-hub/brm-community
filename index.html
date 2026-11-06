@@ -113,7 +113,17 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
       <button class="btn" id="memberForgotPassword">Forgot Password?</button>
       <button class="btn" id="memberSignOut" hidden>Sign Out</button>
     </div>
-
+<div id="passwordResetForm" hidden>
+  <label for="newMemberPassword">New password</label>
+  <input
+    id="newMemberPassword"
+    type="password"
+    placeholder="Enter your new password"
+    minlength="8"
+    autocomplete="new-password"
+  >
+  <button class="btn" id="saveNewPassword">Save New Password</button>
+</div>
     <p id="memberMessage" class="muted" aria-live="polite">
       Your account will be protected by Supabase authentication.
     </p>
@@ -333,6 +343,41 @@ supabaseClient.auth.getSession().then(({ data }) => {
 
 supabaseClient.auth.onAuthStateChange((_event, session) => {
   updateMemberStatus(session?.user || null);
+});
+// BRMMONEY PASSWORD RESET
+
+const passwordResetForm = document.getElementById("passwordResetForm");
+const newMemberPassword = document.getElementById("newMemberPassword");
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY" && session) {
+    passwordResetForm.hidden = false;
+    memberMessage.textContent = "Enter your new password below.";
+  }
+});
+
+document.getElementById("saveNewPassword").addEventListener("click", async () => {
+  const newPassword = newMemberPassword.value;
+
+  if (newPassword.length < 8) {
+    memberMessage.textContent = "Your password must be at least 8 characters.";
+    return;
+  }
+
+  memberMessage.textContent = "Saving your new password...";
+
+  const { error } = await supabaseClient.auth.updateUser({
+    password: newPassword
+  });
+
+  if (error) {
+    memberMessage.textContent = error.message;
+    return;
+  }
+
+  passwordResetForm.hidden = true;
+  newMemberPassword.value = "";
+  memberMessage.textContent = "Your new password has been saved! You can now sign in.";
 });
 </script>
 </body></html>
