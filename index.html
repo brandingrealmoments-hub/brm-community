@@ -54,8 +54,19 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <div class="product"><div><h3>Limited Edition Hoodie</h3><span class="tag">BRM eligible · Demo</span></div><b>3,500 BRM</b></div>
 <p class="muted">Redemption is simulated. No order will be placed and no credits will be deducted.</p></div>
 <div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 500 BRM</p><button class="btn" onclick="alert('Demo only: Square checkout is not connected. No payment was taken and no BRM was issued.')">Preview $5 credit purchase</button></div></section>
-<section id="transactions" class="panel"><div class="card"><div class="eyebrow">WALLET RECORD</div><h1>Transactions</h1><div class="activity"><span>Example opening balance<br><small class="muted">Illustrative demo entry</small></span><b>+750 BRM</b></div><p class="muted">This history is sample data and resets when this page reloads.</p></div></section>
+<section id="transactions" class="panel">
+  <div class="card">
+    <div class="eyebrow">WALLET RECORD</div>
+    <h1>Transactions</h1>
+    <p class="muted">Your personal BRMMONEY credit history.</p>
 
+    <div id="transactionList">
+      <p class="muted">Sign in to load your transactions.</p>
+    </div>
+
+    <p id="transactionStatus" class="muted"></p>
+  </div>
+</section>
 <section id="community" class="panel">
   <div class="card">
     <div class="eyebrow">BRMMONEY COMMUNITY NETWORK</div>
@@ -213,7 +224,54 @@ const memberEmail = document.getElementById("memberEmail");
 const memberPassword = document.getElementById("memberPassword");
 const memberMessage = document.getElementById("memberMessage");
 const memberStatus = document.getElementById("memberStatus");
+// LOAD MEMBER TRANSACTION HISTORY
 
+async function loadMemberTransactions(user) {
+  const list = document.getElementById("transactionList");
+  const status = document.getElementById("transactionStatus");
+
+  list.textContent = "Loading your transactions...";
+
+  const { data, error } = await supabaseClient
+    .from("brm_credit_transactions")
+    .select("amount, transaction_type, description, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    list.textContent = "Could not load transactions.";
+    status.textContent = error.message;
+    return;
+  }
+
+  list.replaceChildren();
+
+  if (!data || data.length === 0) {
+    list.textContent = "No BRM credit transactions yet.";
+    status.textContent = "Your transaction history will appear here.";
+    return;
+  }
+
+  data.forEach((transaction) => {
+    const entry = document.createElement("div");
+    entry.className = "activity";
+
+    const details = document.createElement("span");
+    details.textContent =
+      (transaction.description || transaction.transaction_type || "BRM activity") +
+      " · " + new Date(transaction.created_at).toLocaleDateString();
+
+    const amount = document.createElement("b");
+    amount.textContent =
+      (transaction.amount > 0 ? "+" : "") +
+      Number(transaction.amount).toLocaleString() + " BRM";
+
+    entry.append(details, amount);
+    list.appendChild(entry);
+  });
+
+  status.textContent = "Your transaction history is up to date.";
+}
 async function updateMemberStatus(user) {
   const signOutButton = document.getElementById("memberSignOut");
   const balanceDisplay = document.getElementById("balance");
@@ -245,6 +303,7 @@ async function updateMemberStatus(user) {
       "$" + (balance / 100).toFixed(2) + " toward eligible products";
 
     memberMessage.textContent = "Your wallet is connected!";
+await loadMemberTransactions(user);
   } else {
     memberStatus.textContent = "You are not signed in.";
     signOutButton.hidden = true;
