@@ -304,6 +304,50 @@ async function updateMemberStatus(user) {
 
     memberMessage.textContent = "Your wallet is connected!";
 await loadMemberTransactions(user);
+    let testButton = document.getElementById("ownerRewardTest");
+
+    if (!testButton) {
+      testButton = document.createElement("button");
+      testButton.id = "ownerRewardTest";
+      testButton.type = "button";
+      testButton.textContent = "Test 1 BRM Reward";
+      memberMessage.insertAdjacentElement("afterend", testButton);
+
+      testButton.addEventListener("click", async () => {
+        testButton.disabled = true;
+        memberMessage.textContent = "Testing reward connection...";
+
+        const { data, error } =
+          await supabaseClient.functions.invoke("issue-brm-reward", {
+            body: {
+              target_user_id: user.id,
+              amount: 1,
+              transaction_type: "activity_reward",
+              description: "Owner test credit",
+              idempotency_key: "owner-test-" + user.id
+            }
+          });
+
+        if (error) {
+          memberMessage.textContent =
+            "Test failed: " + error.message;
+          testButton.disabled = false;
+          return;
+        }
+
+        if (!data?.success) {
+          memberMessage.textContent =
+            data?.error || "The reward was not issued.";
+          testButton.disabled = false;
+          return;
+        }
+
+        await updateMemberStatus(user);
+        memberMessage.textContent =
+          "Success! 1 BRM test credit was added to your wallet.";
+        testButton.disabled = true;
+      });
+    }
   } else {
     memberStatus.textContent = "You are not signed in.";
     signOutButton.hidden = true;
@@ -439,5 +483,6 @@ document.getElementById("saveNewPassword").addEventListener("click", async () =>
   memberMessage.textContent = "Your new password has been saved! You can now sign in.";
 });
 </script>
-</body></html>
+</body>
+</html>
 
