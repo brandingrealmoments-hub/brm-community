@@ -39,7 +39,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <nav aria-label="Main navigation">
 <button class="active" data-tab="wallet">My wallet</button><button data-tab="market">Marketplace</button><button data-tab="transactions">Transactions</button><button data-tab="community">Community</button>
 <button data-tab="member">Member Sign In</button>
-<button data-tab="owner">Owner preview</button>
+<button data-tab="owner" id="ownerTab" hidden>Owner Zone 🔒</button>
 </nav>
 <main>
 <section id="wallet" class="panel active">
@@ -323,6 +323,21 @@ async function updateMemberStatus(user) {
   const dollarDisplay = document.getElementById("dollar");
 
   if (user) {
+    const ownerTab = document.getElementById("ownerTab");
+    ownerTab.hidden = true;
+
+    try {
+      const { data: ownerData, error: ownerError } =
+        await supabaseClient.functions.invoke("owner-status", {
+          method: "GET"
+        });
+
+      if (!ownerError && ownerData?.isOwner === true) {
+        ownerTab.hidden = false;
+      }
+    } catch (error) {
+      console.error("Owner verification failed.");
+    }
     memberStatus.textContent = "Signed in as: " + user.email;
     signOutButton.hidden = false;
 
@@ -349,11 +364,11 @@ async function updateMemberStatus(user) {
 
     memberMessage.textContent = "Your wallet is connected!";
 await loadMemberTransactions(user);
-  } else {
+} else {
+    document.getElementById("ownerTab").hidden = true;
     memberStatus.textContent = "You are not signed in.";
     signOutButton.hidden = true;
   }
-}
 
 document.getElementById("memberSignUp").addEventListener("click", async () => {
   const email = memberEmail.value.trim();
