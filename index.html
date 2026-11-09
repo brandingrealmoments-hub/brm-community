@@ -438,6 +438,32 @@ document.getElementById("saveNewPassword").addEventListener("click", async () =>
   newMemberPassword.value = "";
   memberMessage.textContent = "Your new password has been saved! You can now sign in.";
 });
+// TEMPORARY BRM REWARD CONNECTION TEST
+(async function () {
+  const { data: { session } } =
+    await supabaseClient.auth.getSession();
+
+  if (!session) {
+    memberMessage.textContent =
+      "Please sign in to test the reward connection.";
+    return;
+  }
+
+  const { error } = await supabaseClient.functions.invoke(
+    "issue-brm-reward",
+    { body: {} }
+  );
+
+  const status = error?.context?.status;
+
+  memberMessage.textContent =
+    status === 400
+      ? "Reward connection verified! Owner authentication passed."
+      : status === 403
+      ? "Owner check failed. We need to verify the owner account."
+      : "Connection test result: " +
+        (error?.message || "Please check the function logs.");
+})();
 </script>
 </body></html>
 
