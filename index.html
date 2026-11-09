@@ -141,7 +141,52 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     <p id="memberStatus" class="muted">You are not signed in.</p>
   </div>
 </section>
-<section id="owner" class="panel"><div class="card"><div class="eyebrow">OWNER PREVIEW</div><h1>Administrator controls</h1><p class="muted">Owner access is simulated. This is not secure authentication.</p><div class="activity"><span>Credit package</span><b>$5 = 500 BRM</b></div><div class="activity"><span>Expiration</span><b>Unset / disabled</b></div><div class="activity"><span>Refunds and chargebacks</span><b>Manual review</b></div><div class="activity"><span>Product eligibility</span><b>Demo only</b></div><p>In a live system, only the authenticated owner should be able to change balances, prices, eligible products, and system settings.</p></div></section>
+<section id="owner" class="panel">
+  <div class="card">
+    <div class="eyebrow">BRMMONEY OWNER ZONE 🔒</div>
+    <h1>Owner Reward Controls</h1>
+    <p class="muted">
+      Issue BRM rewards to community members. Only your authorized owner account can complete reward transactions.
+    </p>
+
+    <div class="activity">
+      <span>Credit package</span><b>$5 = 500 BRM</b>
+    </div>
+    <div class="activity">
+      <span>Expiration</span><b>Disabled</b>
+    </div>
+    <div class="activity">
+      <span>Refunds and chargebacks</span><b>Manual review</b>
+    </div>
+
+    <h2>Issue a member reward</h2>
+
+    <label for="rewardUserId">Member User ID</label>
+    <input id="rewardUserId" type="text" placeholder="Paste member UUID">
+
+    <label for="rewardAmount">Reward amount (whole BRM)</label>
+    <input id="rewardAmount" type="number" min="1" max="100000" step="1" placeholder="Example: 10">
+
+    <label for="rewardType">Reward category</label>
+    <select id="rewardType">
+      <option value="activity_reward">Activity reward</option>
+      <option value="shopping_bonus">Shopping bonus</option>
+      <option value="referral_reward">Referral reward</option>
+      <option value="special_reward">Special reward</option>
+    </select>
+
+    <label for="rewardDescription">Description</label>
+    <input id="rewardDescription" type="text" maxlength="160" placeholder="Example: Completed community activity">
+
+    <button class="btn" id="issueRewardButton" type="button">
+      Issue BRM Reward
+    </button>
+
+    <p id="ownerRewardMessage" class="muted" aria-live="polite">
+      Sign in with your authorized owner account to use these controls.
+    </p>
+  </div>
+</section>
 </main>
 <footer><b>BRMMONEY Community · Concept preview</b><br>All demo data stays in memory and resets on reload. No payment credentials, real customer data, live wallet, or deployed backend. BRM credits are not publicly traded cryptocurrency or an investment. Transfers and cash-out are not offered; applicable legal exceptions require review.<br><br>Proposed rules, not a final legal policy. Expiration is unset and disabled. Refund and chargeback events go to review; automatic reversals are disabled.</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -437,6 +482,84 @@ document.getElementById("saveNewPassword").addEventListener("click", async () =>
   passwordResetForm.hidden = true;
   newMemberPassword.value = "";
   memberMessage.textContent = "Your new password has been saved! You can now sign in.";
+});
+// BRMMONEY OWNER REWARD CONTROLS
+document.getElementById("issueRewardButton").addEventListener("click", async () => {
+  const button = document.getElementById("issueRewardButton");
+  const message = document.getElementById("ownerRewardMessage");
+
+  const targetUserId = document.getElementById("rewardUserId").value.trim();
+  const amount = Number(document.getElementById("rewardAmount").value);
+  const transactionType = document.getElementById("rewardType").value;
+  const description = document.getElementById("rewardDescription").value.trim();
+
+  const validUUID =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (!validUUID.test(targetUserId)) {
+    message.textContent = "Enter a valid member User ID.";
+    return;
+  }
+
+  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 100000) {
+    message.textContent = "Enter a whole BRM amount between 1 and 100,000.";
+    return;
+  }
+
+  if (!description || description.length > 160) {
+    message.textContent = "Enter a description of up to 160 characters.";
+    return;
+  }
+
+  button.disabled = true;
+  message.textContent = "Checking your owner authorization...";
+
+  try {
+    const { data: sessionData, error: sessionError } =
+      await supabaseClient.auth.getSession();
+
+    if (sessionError || !sessionData.session) {
+      message.textContent = "Please sign in before issuing rewards.";
+      return;
+    }
+
+    message.textContent = "Submitting reward securely...";
+
+    const { data, error } =
+      await supabaseClient.functions.invoke("issue-brm-reward", {
+        body: {
+          target_user_id: targetUserId,
+          amount: amount,
+          transaction_type: transactionType,
+          description: description,
+          idempotency_key: "owner-reward-" + crypto.randomUUID()
+        }
+      });
+
+    if (error) {
+      message.textContent = "Reward request failed: " + error.message;
+      return;
+    }
+
+    if (!data?.success) {
+      message.textContent = data?.error || "Reward was not issued.";
+      return;
+    }
+
+    message.textContent =
+      "Success! " + amount + " BRM issued to the member.";
+
+    document.getElementById("rewardUserId").value = "";
+    document.getElementById("rewardAmount").value = "";
+    document.getElementById("rewardDescription").value = "";
+
+    await updateMemberStatus(sessionData.session.user);
+
+  } catch (error) {
+    message.textContent = "Something went wrong. Please check the function logs.";
+  } finally {
+    button.disabled = false;
+  }
 });
 </script>
 </body>
