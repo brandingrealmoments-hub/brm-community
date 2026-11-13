@@ -364,7 +364,7 @@ async function updateMemberStatus(user) {
 
     memberMessage.textContent = "Your wallet is connected!";
 await loadMemberTransactions(user);
-} else {
+  } else {
     
 document.getElementById("ownerTab").hidden
 = true;
@@ -373,7 +373,6 @@ not signed in.";
     signOutButton.hidden = true;
   }
 }
-
 document.getElementById("memberSignUp")
     .addEventListener("click", async () => {
   const email = memberEmail.value.trim();
