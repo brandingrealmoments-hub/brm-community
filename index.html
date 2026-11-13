@@ -365,12 +365,17 @@ async function updateMemberStatus(user) {
     memberMessage.textContent = "Your wallet is connected!";
 await loadMemberTransactions(user);
 } else {
-    document.getElementById("ownerTab").hidden = true;
-    memberStatus.textContent = "You are not signed in.";
+    
+document.getElementById("ownerTab").hidden
+= true;
+    memberStatus.textContent = "You are 
+not signed in.";
     signOutButton.hidden = true;
   }
+}
 
-document.getElementById("memberSignUp").addEventListener("click", async () => {
+document.getElementById("memberSignUp")
+    .addEventListener("click", async () => {
   const email = memberEmail.value.trim();
   const password = memberPassword.value;
 
