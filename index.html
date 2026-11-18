@@ -364,12 +364,10 @@ async function updateMemberStatus(user) {
 
     memberMessage.textContent = "Your wallet is connected!";
 await loadMemberTransactions(user);
-  } else {
 
-document.getElementById("ownerTab").hidden
-= true;
-memberStatus.textContent = "You are not
-signed in.";
+  } else {
+    document.getElementById("ownerTab").hidden = true;
+    memberStatus.textContent = "You are not signed in.";
     signOutButton.hidden = true;
   }
 }
