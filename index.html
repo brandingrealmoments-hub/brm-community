@@ -500,9 +500,19 @@ const newMemberPassword = document.getElementById("newMemberPassword");
 supabaseClient.auth.onAuthStateChange((event, session) => {
   if (event === "PASSWORD_RECOVERY" && session) {
     passwordResetForm.hidden = false;
+    showTab("member");
     memberMessage.textContent = "Enter your new password below.";
   }
 });
+
+// Show the password form immediately when a recovery link lands on this site.
+const recoveryHash = new URLSearchParams(window.location.hash.slice(1));
+const recoveryQuery = new URLSearchParams(window.location.search);
+if (recoveryHash.get("type") === "recovery" || recoveryQuery.get("type") === "recovery") {
+  passwordResetForm.hidden = false;
+  showTab("member");
+  memberMessage.textContent = "Recovery link detected. Enter your new password below.";
+}
 
 document.getElementById("saveNewPassword").addEventListener("click", async () => {
   const newPassword = newMemberPassword.value;
