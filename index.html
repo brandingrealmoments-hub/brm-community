@@ -46,7 +46,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <div class="hero"><div><div class="eyebrow">YOUR COMMUNITY. YOUR CREDITS.</div><h1>A little credit.<br>A world of possibility.</h1><p>Buy BRM credits. Discover eligible products. Keep every transaction in one place.</p><button class="btn" onclick="showTab('market')">Buy BRM credits →</button></div>
 <div class="wallet"><div><div class="eyebrow">YOUR BRM WALLET</div><div class="balance" id="balance">0 <span>BRM</span></div><p id="dollar">$0.00 toward eligible products</p></div><p class="muted">Not transferable · No cash exchange, except as required by law</p></div></div>
 <div class="grid"><div class="card"><div class="eyebrow">ONE SIMPLE PACKAGE</div><h2>$5.00 USD = 500 BRM</h2><p class="muted">Proposed redemption value: 1 BRM = $0.01 USD. Credits are issued only after a successful payment is confirmed.</p><div class="steps"><div>01 / Purchase<small>Secure Square-hosted checkout.</small></div><div>02 / Confirm<small>Verified payment, issued once.</small></div><div>03 / Redeem<small>Eligible marketplace products only.</small></div></div></div>
-<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Latest activity</h2><button class="btn secondary" onclick="showTab('transactions')">View all</button></div><div class="activity"><span>Example opening balance<br><small class="muted">Illustrative</small></span><b>+750 BRM</b></div></div></div>
+<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Latest activity</h2><button class="btn secondary" onclick="showTab('transactions')">View all</button></div><p class="muted">Your recent wallet activity will appear here after you sign in.</p></div></div>
 </section>
 <section id="market" class="panel"><div class="card"><div class="eyebrow">BRMMONEY MARKETPLACE</div><h1>Shop with BRM.</h1><p class="muted">Demo products only. Product eligibility and prices are examples, not connected to your Square catalog.</p>
 <div class="product"><div><h3>BRMMONEY Culture Tee</h3><span class="tag">BRM eligible · Demo</span></div><b>2,000 BRM</b></div>
@@ -271,6 +271,7 @@ async function startBRMCheckout() {
     if (sessionError) throw sessionError;
     if (!sessionData.session) {
       status.textContent = "Please sign in first to continue to secure Square checkout.";
+      button.disabled = false;
       showTab("member");
       return;
     }
