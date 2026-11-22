@@ -462,7 +462,7 @@ document.getElementById("memberForgotPassword").addEventListener("click", async 
   memberMessage.textContent = "Sending password reset email...";
 
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://brandingrealmoments-hub.github.io/brm-community/"
+    redirectTo: "https://mccurtyd400-max.github.io/brm-community/"
   });
 
   if (error) {
