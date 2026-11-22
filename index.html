@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BRMMONEY Community — Interactive Demo</title>
+<title>BRMMONEY Community</title>
 <style>
 :root{--green:#123f32;--green2:#1d503f;--lime:#d8f35b;--paper:#f5f6ef;--ink:#18251f;--muted:#68766e;--line:#dfe5dc}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Arial,Helvetica,sans-serif}
@@ -34,8 +34,8 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 </style>
 </head>
 <body>
-<div class="notice"><span>INTERACTIVE PREVIEW · SIMULATED DATA ONLY</span><span>No live payments · No Square connection · Resets on reload</span></div>
-<header><div class="brand"><div class="mark">b</div><div>BRMMONEY<small>COMMUNITY</small></div></div><span class="pill">Demo customer</span></header>
+<div class="notice"><span>BRMMONEY COMMUNITY WALLET</span><span>Square-hosted checkout · Credits after confirmed payment</span></div>
+<header><div class="brand"><div class="mark">b</div><div>BRMMONEY<small>COMMUNITY</small></div></div><span class="pill">Member wallet</span></header>
 <nav aria-label="Main navigation">
 <button class="active" data-tab="wallet">My wallet</button><button data-tab="market">Marketplace</button><button data-tab="transactions">Transactions</button><button data-tab="community">Community</button>
 <button data-tab="member">Member Sign In</button>
@@ -43,17 +43,17 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 </nav>
 <main>
 <section id="wallet" class="panel active">
-<div class="hero"><div><div class="eyebrow">YOUR COMMUNITY. YOUR CREDITS.</div><h1>A little credit.<br>A world of possibility.</h1><p>Buy BRM credits. Discover eligible products. Keep every transaction in one place.</p><button class="btn" onclick="showTab('market')">Try buying credits →</button></div>
-<div class="wallet"><div><div class="eyebrow">DEMO WALLET</div><div class="balance" id="balance">750 <span>BRM</span></div><p id="dollar">$7.50 toward eligible products</p></div><p class="muted">Not transferable · No cash exchange, except as required by law</p></div></div>
-<div class="grid"><div class="card"><div class="eyebrow">ONE SIMPLE PACKAGE</div><h2>$5.00 USD = 500 BRM</h2><p class="muted">Proposed redemption value: 1 BRM = $0.01 USD. Credits are issued only after a successful payment is confirmed.</p><div class="steps"><div>01 / Purchase<small>Square checkout in a future live version.</small></div><div>02 / Confirm<small>Verified payment, issued once.</small></div><div>03 / Redeem<small>Eligible marketplace products only.</small></div></div></div>
-<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Latest activity</h2><button class="btn secondary" onclick="showTab('transactions')">View all</button></div><div class="activity"><span>Example opening balance<br><small class="muted">Illustrative</small></span><b>+750 BRM</b></div></div></div>
+<div class="hero"><div><div class="eyebrow">YOUR COMMUNITY. YOUR CREDITS.</div><h1>A little credit.<br>A world of possibility.</h1><p>Buy BRM credits. Discover eligible products. Keep every transaction in one place.</p><button class="btn" onclick="showTab('market')">Buy BRM credits →</button></div>
+<div class="wallet"><div><div class="eyebrow">YOUR BRM WALLET</div><div class="balance" id="balance">0 <span>BRM</span></div><p id="dollar">$0.00 toward eligible products</p></div><p class="muted">Not transferable · No cash exchange, except as required by law</p></div></div>
+<div class="grid"><div class="card"><div class="eyebrow">ONE SIMPLE PACKAGE</div><h2>$5.00 USD = 500 BRM</h2><p class="muted">Proposed redemption value: 1 BRM = $0.01 USD. Credits are issued only after a successful payment is confirmed.</p><div class="steps"><div>01 / Purchase<small>Secure Square-hosted checkout.</small></div><div>02 / Confirm<small>Verified payment, issued once.</small></div><div>03 / Redeem<small>Eligible marketplace products only.</small></div></div></div>
+<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Latest activity</h2><button class="btn secondary" onclick="showTab('transactions')">View all</button></div><p class="muted">Your recent wallet activity will appear here after you sign in.</p></div></div>
 </section>
 <section id="market" class="panel"><div class="card"><div class="eyebrow">BRMMONEY MARKETPLACE</div><h1>Shop with BRM.</h1><p class="muted">Demo products only. Product eligibility and prices are examples, not connected to your Square catalog.</p>
 <div class="product"><div><h3>BRMMONEY Culture Tee</h3><span class="tag">BRM eligible · Demo</span></div><b>2,000 BRM</b></div>
 <div class="product"><div><h3>Community Sticker Pack</h3><span class="tag">BRM eligible · Demo</span></div><b>300 BRM</b></div>
 <div class="product"><div><h3>Limited Edition Hoodie</h3><span class="tag">BRM eligible · Demo</span></div><b>3,500 BRM</b></div>
 <p class="muted">Redemption is simulated. No order will be placed and no credits will be deducted.</p></div>
-<div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 500 BRM</p><button class="btn" onclick="alert('Demo only: Square checkout is not connected. No payment was taken and no BRM was issued.')">Preview $5 credit purchase</button></div></section>
+<div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 500 BRM</p><button class="btn" id="marketBuyCreditsButton" onclick="startBRMCheckout()">Buy 500 BRM for $5.00</button><p id="checkoutStatus" class="muted" aria-live="polite">Sign in to purchase BRM credits.</p></div></section>
 <section id="transactions" class="panel">
   <div class="card">
     <div class="eyebrow">WALLET RECORD</div>
@@ -188,7 +188,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
   </div>
 </section>
 </main>
-<footer><b>BRMMONEY Community · Concept preview</b><br>All demo data stays in memory and resets on reload. No payment credentials, real customer data, live wallet, or deployed backend. BRM credits are not publicly traded cryptocurrency or an investment. Transfers and cash-out are not offered; applicable legal exceptions require review.<br><br>Proposed rules, not a final legal policy. Expiration is unset and disabled. Refund and chargeback events go to review; automatic reversals are disabled.</footer>
+<footer><b>BRMMONEY Community</b><br>BRM credits are issued only after Square confirms a successful $5.00 USD payment. Each confirmed package adds 500 BRM. Credits are for eligible marketplace products only; transfers and cash-out are not offered, subject to applicable law. Marketplace listings and community activity figures are still preview content. BRM credits are not publicly traded cryptocurrency or an investment.<br><br>Proposed rules, not a final legal policy. Expiration is unset and disabled. Refund and chargeback events go to review; automatic reversals are disabled.</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // BRMMONEY Community — Supabase connection
@@ -261,6 +261,33 @@ function drawCommunityChart() {
 }
 
 drawCommunityChart();
+async function startBRMCheckout() {
+  const button = document.getElementById("marketBuyCreditsButton");
+  const status = document.getElementById("checkoutStatus");
+  button.disabled = true;
+  status.textContent = "Checking your member sign-in...";
+  try {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (!sessionData.session) {
+      status.textContent = "Please sign in first to continue to secure Square checkout.";
+      button.disabled = false;
+      showTab("member");
+      return;
+    }
+    status.textContent = "Creating your secure $5.00 Square checkout...";
+    const { data, error } = await supabaseClient.functions.invoke("create-brm-checkout", { body: {} });
+    if (error) throw error;
+    if (!data?.checkout_url || typeof data.checkout_url !== "string" || !data.checkout_url.startsWith("https://")) {
+      throw new Error(data?.error || "Checkout link was not returned. Please try again.");
+    }
+    status.textContent = "Opening secure Square checkout...";
+    window.location.assign(data.checkout_url);
+  } catch (error) {
+    status.textContent = error?.message || "Could not start checkout. Please try again.";
+    button.disabled = false;
+  }
+}
 function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 // BRMMONEY MEMBER ACCOUNT FUNCTIONS
