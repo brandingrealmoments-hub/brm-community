@@ -267,9 +267,16 @@ async function startBRMCheckout() {
   button.disabled = true;
   status.textContent = "Checking your member sign-in...";
   try {
-    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    let { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
     if (sessionError) throw sessionError;
-    if (!sessionData.session) {
+    let session = sessionData?.session;
+
+    // Recover a valid session if the tab's initial auth state is still settling.
+    if (!session) {
+      const refreshed = await supabaseClient.auth.refreshSession();
+      if (!refreshed.error) session = refreshed.data?.session || null;
+    }
+    if (!session) {
       status.textContent = "Please sign in first to continue to secure Square checkout.";
       button.disabled = false;
       showTab("member");
@@ -278,7 +285,7 @@ async function startBRMCheckout() {
     status.textContent = "Creating your secure $5.00 Square checkout...";
     const { data, error } = await supabaseClient.functions.invoke("create-brm-checkout", {
       body: {},
-      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+      headers: { Authorization: "Bearer " + session.access_token }
     });
     if (error) throw error;
     if (!data?.checkout_url || typeof data.checkout_url !== "string" || !data.checkout_url.startsWith("https://")) {
