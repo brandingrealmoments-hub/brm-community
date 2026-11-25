@@ -164,6 +164,12 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     <button class="btn" id="syncSquareCatalogButton" type="button">Sync Square Catalog</button>
     <p id="catalogSyncMessage" class="muted" aria-live="polite">Not synced yet.</p>
 
+    <h2>Review Square products</h2>
+    <p class="muted">Review imported Square items. Only products you approve and give a BRM price can be made eligible. Archived items cannot be approved.</p>
+    <button class="btn secondary" id="loadSquareProductsButton" type="button">Load products for review</button>
+    <p id="squareProductsStatus" class="muted" aria-live="polite">Catalog imported. Load the products when you are ready to review them.</p>
+    <div id="squareProductsList"></div>
+
     <h2>Issue a member reward</h2>
 
     <label for="rewardUserId">Member User ID</label>
@@ -582,6 +588,150 @@ document.getElementById("syncSquareCatalogButton").addEventListener("click", asy
     button.disabled = false;
   }
 });
+
+// OWNER-ONLY SQUARE CATALOG REVIEW
+const loadSquareProductsButton = document.getElementById("loadSquareProductsButton");
+const squareProductsStatus = document.getElementById("squareProductsStatus");
+const squareProductsList = document.getElementById("squareProductsList");
+
+async function callCatalogManager(payload) {
+  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+  if (sessionError || !sessionData.session) throw new Error("Please sign in with your owner account.");
+  const { data, error } = await supabaseClient.functions.invoke("manage-square-catalog", {
+    body: payload,
+    headers: { Authorization: "Bearer " + sessionData.session.access_token }
+  });
+  if (error) throw error;
+  if (!data?.success) throw new Error(data?.error || "Catalog request failed.");
+  return data;
+}
+
+async function loadSquareProducts() {
+  loadSquareProductsButton.disabled = true;
+  squareProductsStatus.textContent = "Loading imported Square products...";
+  squareProductsList.replaceChildren();
+  try {
+    const data = await callCatalogManager({ action: "list" });
+    squareProductsStatus.textContent = data.products.length + " product variations loaded. All changes are owner-only.";
+    data.products.forEach((product) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.marginTop = "14px";
+
+      const heading = document.createElement("div");
+      heading.style.display = "flex";
+      heading.style.alignItems = "center";
+      heading.style.gap = "12px";
+
+      if (product.image_url) {
+        const image = document.createElement("img");
+        image.src = product.image_url;
+        image.alt = "";
+        image.loading = "lazy";
+        image.style.width = "64px";
+        image.style.height = "64px";
+        image.style.objectFit = "cover";
+        image.style.borderRadius = "10px";
+        heading.appendChild(image);
+      }
+
+      const title = document.createElement("div");
+      const name = document.createElement("h3");
+      name.textContent = product.item_name || "Unnamed Square item";
+      const variation = document.createElement("p");
+      variation.className = "muted";
+      variation.textContent = (product.variation_name || "Default variation") +
+        (product.sku ? " · SKU " + product.sku : "");
+      title.append(name, variation);
+      heading.appendChild(title);
+      card.appendChild(heading);
+
+      const squarePrice = document.createElement("p");
+      squarePrice.className = "muted";
+      squarePrice.textContent = product.price_cents == null
+        ? "Square price not set"
+        : "Square price: " + new Intl.NumberFormat("en-US", {
+            style: "currency", currency: product.currency || "USD"
+          }).format(product.price_cents / 100);
+      card.appendChild(squarePrice);
+
+      if (product.is_archived) {
+        const archived = document.createElement("p");
+        archived.className = "muted";
+        archived.textContent = "Archived in Square — cannot be approved";
+        card.appendChild(archived);
+      }
+
+      const label = document.createElement("label");
+      label.textContent = "BRM redemption price (whole BRM)";
+      label.style.display = "block";
+      label.style.marginTop = "10px";
+      const priceInput = document.createElement("input");
+      priceInput.type = "number";
+      priceInput.min = "1";
+      priceInput.max = "10000000";
+      priceInput.step = "1";
+      priceInput.placeholder = "Set BRM price";
+      priceInput.value = product.brm_price ?? "";
+      priceInput.style.width = "100%";
+      priceInput.disabled = product.is_archived;
+      label.appendChild(priceInput);
+      card.appendChild(label);
+
+      const eligibleLabel = document.createElement("label");
+      eligibleLabel.style.display = "flex";
+      eligibleLabel.style.alignItems = "center";
+      eligibleLabel.style.gap = "9px";
+      eligibleLabel.style.marginTop = "12px";
+      const eligibleInput = document.createElement("input");
+      eligibleInput.type = "checkbox";
+      eligibleInput.checked = product.is_brm_eligible === true;
+      eligibleInput.disabled = product.is_archived;
+      eligibleLabel.append(eligibleInput, document.createTextNode("Approve for BRM redemption"));
+      card.appendChild(eligibleLabel);
+
+      const saveButton = document.createElement("button");
+      saveButton.className = "btn";
+      saveButton.type = "button";
+      saveButton.textContent = "Save product review";
+      saveButton.disabled = product.is_archived;
+      const result = document.createElement("p");
+      result.className = "muted";
+      result.setAttribute("aria-live", "polite");
+      saveButton.addEventListener("click", async () => {
+        const amount = priceInput.value.trim() === "" ? null : Number(priceInput.value);
+        if (eligibleInput.checked && (!Number.isSafeInteger(amount) || amount < 1)) {
+          result.textContent = "Enter a whole BRM price before approving this item.";
+          return;
+        }
+        saveButton.disabled = true;
+        result.textContent = "Saving review...";
+        try {
+          await callCatalogManager({
+            action: "update",
+            id: product.id,
+            is_brm_eligible: eligibleInput.checked,
+            brm_price: eligibleInput.checked ? amount : null
+          });
+          result.textContent = eligibleInput.checked
+            ? "Saved. Approved for BRM redemption with a price of " + amount.toLocaleString() + " BRM."
+            : "Saved. This product remains unavailable for BRM redemption.";
+        } catch (error) {
+          result.textContent = error?.message || "Could not save this product.";
+        } finally {
+          saveButton.disabled = false;
+        }
+      });
+      card.append(saveButton, result);
+      squareProductsList.appendChild(card);
+    });
+  } catch (error) {
+    squareProductsStatus.textContent = error?.message || "Could not load the review catalog.";
+  } finally {
+    loadSquareProductsButton.disabled = false;
+  }
+}
+loadSquareProductsButton.addEventListener("click", loadSquareProducts);
 
 // BRMMONEY OWNER REWARD CONTROLS
 document.getElementById("issueRewardButton").addEventListener("click", async () => {
