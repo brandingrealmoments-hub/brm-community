@@ -276,7 +276,10 @@ async function startBRMCheckout() {
       return;
     }
     status.textContent = "Creating your secure $5.00 Square checkout...";
-    const { data, error } = await supabaseClient.functions.invoke("create-brm-checkout", { body: {} });
+    const { data, error } = await supabaseClient.functions.invoke("create-brm-checkout", {
+      body: {},
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
     if (error) throw error;
     if (!data?.checkout_url || typeof data.checkout_url !== "string" || !data.checkout_url.startsWith("https://")) {
       throw new Error(data?.error || "Checkout link was not returned. Please try again.");
@@ -390,9 +393,13 @@ async function updateMemberStatus(user) {
       "$" + (balance / 100).toFixed(2) + " toward eligible products";
 
     memberMessage.textContent = "Your wallet is connected!";
+    const checkoutStatus = document.getElementById("checkoutStatus");
+    if (checkoutStatus) checkoutStatus.textContent = "Signed in. You can start secure Square checkout when ready.";
 await loadMemberTransactions(user);
 
   } else {
+    const checkoutStatus = document.getElementById("checkoutStatus");
+    if (checkoutStatus) checkoutStatus.textContent = "Sign in to purchase BRM credits.";
     document.getElementById("ownerTab").hidden = true;
     memberStatus.textContent = "You are not signed in.";
     signOutButton.hidden = true;
