@@ -159,6 +159,11 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
       <span>Refunds and chargebacks</span><b>Manual review</b>
     </div>
 
+    <h2>Square product catalog</h2>
+    <p class="muted">Import your Square catalog into a private review list. Imported items stay unavailable for BRM redemption until you approve eligibility and set prices.</p>
+    <button class="btn" id="syncSquareCatalogButton" type="button">Sync Square Catalog</button>
+    <p id="catalogSyncMessage" class="muted" aria-live="polite">Not synced yet.</p>
+
     <h2>Issue a member reward</h2>
 
     <label for="rewardUserId">Member User ID</label>
@@ -551,6 +556,33 @@ document.getElementById("saveNewPassword").addEventListener("click", async () =>
   newMemberPassword.value = "";
   memberMessage.textContent = "Your new password has been saved! You can now sign in.";
 });
+// OWNER-ONLY SQUARE CATALOG IMPORT
+document.getElementById("syncSquareCatalogButton").addEventListener("click", async () => {
+  const button = document.getElementById("syncSquareCatalogButton");
+  const message = document.getElementById("catalogSyncMessage");
+  button.disabled = true;
+  message.textContent = "Verifying owner access and syncing your Square catalog...";
+  try {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      message.textContent = "Please sign in with your authorized owner account first.";
+      return;
+    }
+    const { data, error } = await supabaseClient.functions.invoke("sync-square-catalog", {
+      body: {},
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || "Catalog sync did not complete.");
+    message.textContent = "Catalog sync complete: " + data.items + " Square items and " +
+      data.variationsSaved + " product variations imported. All remain BRM-ineligible pending review.";
+  } catch (error) {
+    message.textContent = error?.message || "Catalog sync failed. Check the Supabase function logs.";
+  } finally {
+    button.disabled = false;
+  }
+});
+
 // BRMMONEY OWNER REWARD CONTROLS
 document.getElementById("issueRewardButton").addEventListener("click", async () => {
   const button = document.getElementById("issueRewardButton");
