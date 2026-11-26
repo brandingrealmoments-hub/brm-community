@@ -172,7 +172,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     <div id="squareProductsList"></div>
 
     <h2>Split-checkout shipping and tax review</h2>
-    <p class="muted">Review member checkout reservations. Enter shipping and tax only after verifying the actual carrier quote and tax calculation. Saving a quote does not start payment.</p>
+    <p class="muted">Review member checkout reservations. U.S. shipping is a fixed $6.00 flat fee. Enter only the separately verified tax amount. Saving a quote does not start payment.</p>
     <button class="btn secondary" id="loadCheckoutReservationsButton" type="button">Load checkout reservations</button>
     <p id="checkoutReservationsStatus" class="muted" aria-live="polite">No reservations loaded.</p>
     <div id="checkoutReservationsList"></div>
@@ -910,11 +910,10 @@ async function loadCheckoutReservations() {
         card.appendChild(expired);
       } else {
         const shippingLabel = document.createElement("label");
-        shippingLabel.textContent = "Verified shipping amount (USD)";
+        shippingLabel.textContent = "U.S. flat shipping fee (fixed)";
         shippingLabel.style.display = "block";
         const shippingInput = document.createElement("input");
-        shippingInput.type = "number"; shippingInput.min = "0"; shippingInput.step = "0.01";
-        shippingInput.placeholder = "0.00"; shippingInput.value = (Number(r.shipping_cents || 0) / 100).toFixed(2);
+        shippingInput.type = "text"; shippingInput.value = "$6.00"; shippingInput.readOnly = true; shippingInput.setAttribute("aria-label", "Fixed U.S. flat shipping fee of six dollars");
         shippingLabel.appendChild(shippingInput);
         const taxLabel = document.createElement("label");
         taxLabel.textContent = "Verified tax amount (USD)";
@@ -940,10 +939,9 @@ async function loadCheckoutReservations() {
         const result = document.createElement("p");
         result.className = "muted"; result.setAttribute("aria-live", "polite");
         save.addEventListener("click", async () => {
-          const shipping = Number(shippingInput.value);
           const tax = Number(taxInput.value);
-          if (!Number.isFinite(shipping) || !Number.isFinite(tax) || shipping < 0 || tax < 0 ||
-              Math.round(shipping * 100) !== shipping * 100 || Math.round(tax * 100) !== tax * 100 ||
+          if (!Number.isFinite(tax) || tax < 0 ||
+              Math.round(tax * 100) !== tax * 100 ||
               !sourceInput.value.trim()) {
             result.textContent = "Enter valid USD amounts to the cent and the verified quote source.";
             return;
@@ -953,7 +951,6 @@ async function loadCheckoutReservations() {
           try {
             const saved = await ownerFunction("owner-apply-brm-checkout-quote", {
               reservation_id: r.id,
-              shipping_cents: Math.round(shipping * 100),
               tax_cents: Math.round(tax * 100),
               quote_source: sourceInput.value.trim(),
               quote_reference: referenceInput.value.trim() || undefined
