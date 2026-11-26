@@ -181,6 +181,13 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     <p id="squareProductsStatus" class="muted" aria-live="polite">Catalog imported. Load the products when you are ready to review them.</p>
     <div id="squareProductsList"></div>
 
+    <h2>Expired marketplace checkout cleanup</h2>
+    <p class="muted">Check expired Square checkout links. The first check is a dry run and does not change anything. If Square shows an active or unverified payment, that reservation is skipped.</p>
+    <button class="btn secondary" id="previewExpiredCheckoutCleanupButton" type="button">Preview expired checkouts</button>
+    <button class="btn" id="applyExpiredCheckoutCleanupButton" type="button" disabled>Cancel abandoned checkouts and release credits</button>
+    <p id="expiredCheckoutCleanupStatus" class="muted" aria-live="polite">Run a preview before applying cleanup.</p>
+    <div id="expiredCheckoutCleanupResults"></div>
+
     <h2>Issue a member reward</h2>
 
     <label for="rewardUserId">Member User ID</label>
@@ -854,6 +861,73 @@ async function loadSquareProducts() {
   }
 }
 loadSquareProductsButton.addEventListener("click", loadSquareProducts);
+
+// OWNER-ONLY EXPIRED MARKETPLACE CHECKOUT CLEANUP
+let expiredCheckoutPreviewReady = false;
+let expiredCheckoutPreviewResults = [];
+const cleanupPreviewButton = document.getElementById("previewExpiredCheckoutCleanupButton");
+const cleanupApplyButton = document.getElementById("applyExpiredCheckoutCleanupButton");
+const cleanupStatus = document.getElementById("expiredCheckoutCleanupStatus");
+const cleanupResults = document.getElementById("expiredCheckoutCleanupResults");
+
+async function runExpiredCheckoutCleanup(apply) {
+  const button = apply ? cleanupApplyButton : cleanupPreviewButton;
+  button.disabled = true;
+  cleanupApplyButton.disabled = true;
+  cleanupStatus.textContent = apply
+    ? "Checking Square payment status and safely cleaning expired checkouts..."
+    : "Checking expired reservations and Square payment status (no changes will be made)...";
+  cleanupResults.replaceChildren();
+  try {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !sessionData.session) throw new Error("Please sign in with your owner account.");
+    const { data, error } = await supabaseClient.functions.invoke("owner-cleanup-expired-brm-checkouts", {
+      body: { apply, limit: 10 },
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
+    if (error) throw error;
+    if (!data?.success || !Array.isArray(data.results)) throw new Error(data?.error || "Cleanup request failed.");
+    expiredCheckoutPreviewReady = !apply;
+    expiredCheckoutPreviewResults = data.results;
+    const counts = {};
+    data.results.forEach(item => counts[item.action] = (counts[item.action] || 0) + 1);
+    cleanupStatus.textContent = (apply ? "Cleanup finished. " : "Preview finished. No changes were made. ") +
+      data.scanned + " expired checkout(s) checked. " +
+      (counts.would_cancel_expired_link || 0) + " eligible to cancel; " +
+      (counts.skipped_payment_exists || 0) + " with an active payment skipped; " +
+      (counts.skipped_payment_status_unverified || 0) + " with unverified payment status skipped.";
+    data.results.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "activity";
+      const detail = document.createElement("span");
+      detail.textContent = (item.product_name || "Marketplace checkout") + " · " + item.action.replaceAll("_", " ");
+      const credits = document.createElement("b");
+      credits.textContent = Number(item.brm_credits || 0).toLocaleString() + " BRM";
+      row.append(detail, credits);
+      cleanupResults.appendChild(row);
+    });
+    if (!data.results.length) {
+      cleanupResults.textContent = "No expired checkout links need cleanup right now.";
+    }
+    cleanupApplyButton.disabled = apply || !data.results.some(item => item.action === "would_cancel_expired_link");
+  } catch (error) {
+    expiredCheckoutPreviewReady = false;
+    cleanupStatus.textContent = error?.message || "Could not run expired checkout cleanup.";
+    cleanupApplyButton.disabled = true;
+  } finally {
+    button.disabled = false;
+  }
+}
+cleanupPreviewButton.addEventListener("click", () => runExpiredCheckoutCleanup(false));
+cleanupApplyButton.addEventListener("click", async () => {
+  if (!expiredCheckoutPreviewReady || !expiredCheckoutPreviewResults.some(item => item.action === "would_cancel_expired_link")) {
+    cleanupStatus.textContent = "Run a fresh preview before applying cleanup.";
+    cleanupApplyButton.disabled = true;
+    return;
+  }
+  if (!window.confirm("Cancel only the expired Square checkout links that passed the payment checks, then release their reserved BRM credits?")) return;
+  await runExpiredCheckoutCleanup(true);
+});
 
 // BRMMONEY OWNER REWARD CONTROLS
 document.getElementById("issueRewardButton").addEventListener("click", async () => {
