@@ -27,7 +27,7 @@ p{color:inherit}.hero p{color:#d4dfd7;max-width:390px}.wallet{background:var(--g
 h2{font-size:25px;margin:8px 0 12px}h3{margin:0 0 8px}.muted{color:var(--muted)}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}.steps div{border-top:1px solid var(--line);padding-top:14px;font-weight:700}.steps small{display:block;font-weight:400;color:var(--muted);margin-top:8px}
 .activity{display:flex;justify-content:space-between;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
 .panel{display:none}.panel.active{display:block}
-.product{display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:1px solid var(--line);padding:16px 0}.product:last-child{border:0}
+.product{display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:1px solid var(--line);padding:16px 0}.product:last-child{border:0}.product-select{border:0;background:var(--green);color:white;padding:10px 16px;border-radius:22px;font-weight:800;cursor:pointer;white-space:nowrap}.product-select:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
 .tag{font-size:11px;background:#edf3e8;border-radius:20px;padding:5px 9px;color:#34553c}
 footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 @media(max-width:700px){.hero,.grid{grid-template-columns:1fr}.hero>div{padding:28px}.balance{font-size:48px}.steps{grid-template-columns:1fr}header{margin-top:20px}}
@@ -51,6 +51,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <section id="market" class="panel"><div class="card"><div class="eyebrow">BRMMONEY MARKETPLACE</div><h1>Shop with BRM.</h1><p class="muted">Live Square products approved for BRM redemption. Prices shown here come from your private synced catalog.</p>
 <button class="btn secondary" id="loadMarketplaceButton" type="button">Refresh approved products</button>
 <p id="marketplaceStatus" class="muted" aria-live="polite">Sign in to view approved products.</p>
+<div id="selectedProductPanel" class="card" style="display:none;margin-top:18px;border:2px solid var(--green)" aria-live="polite"></div>
 <div id="marketplaceProducts"></div>
 <p class="muted">Checkout is not open yet. Shipping and tax must be calculated from a verified provider before any member payment link can be created. No credits are deducted on this page.</p></div>
 <div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 500 BRM</p><button class="btn" id="marketBuyCreditsButton" onclick="startBRMCheckout()">Buy 500 BRM for $5.00</button><p id="checkoutStatus" class="muted" aria-live="polite">Sign in to purchase BRM credits.</p></div></section>
@@ -383,10 +384,13 @@ async function loadMarketplaceProducts() {
       tag.className = "tag";
       tag.textContent = "Owner approved for BRM";
       details.append(name, variation, prices, tag);
-      const unavailable = document.createElement("p");
-      unavailable.className = "muted";
-      unavailable.textContent = "Checkout opening after verified shipping and tax integration.";
-      card.append(details, unavailable);
+      const selectButton = document.createElement("button");
+      selectButton.type = "button";
+      selectButton.className = "product-select";
+      selectButton.textContent = "Select product";
+      selectButton.setAttribute("aria-label", "View BRM redemption details for " + (product.item_name || "Square product"));
+      selectButton.addEventListener("click", () => showSelectedMarketplaceProduct(product));
+      card.append(details, selectButton);
       marketplaceProducts.appendChild(card);
     });
   } catch (error) {
@@ -396,6 +400,49 @@ async function loadMarketplaceProducts() {
   }
 }
 if (loadMarketplaceButton) loadMarketplaceButton.addEventListener("click", loadMarketplaceProducts);
+const selectedProductPanel = document.getElementById("selectedProductPanel");
+function showSelectedMarketplaceProduct(product) {
+  if (!selectedProductPanel) return;
+  selectedProductPanel.replaceChildren();
+  const heading = document.createElement("h2");
+  heading.textContent = "Selected product";
+  const name = document.createElement("h3");
+  name.textContent = product.item_name || "Square product";
+  const variation = document.createElement("p");
+  variation.className = "muted";
+  variation.textContent = product.variation_name || "Default variation";
+  const squareCents = Number(product.price_cents);
+  const brmCredits = Number(product.brm_price);
+  const cardCents = squareCents - brmCredits;
+  const rows = [
+    ["Square item price", moneyFromCents(squareCents)],
+    ["BRM credits to redeem", brmCredits.toLocaleString() + " BRM"],
+    ["Remaining card subtotal", moneyFromCents(cardCents)]
+  ];
+  rows.forEach(([labelText, valueText]) => {
+    const row = document.createElement("div");
+    row.className = "activity";
+    const label = document.createElement("span");
+    label.textContent = labelText;
+    const value = document.createElement("b");
+    value.textContent = valueText;
+    row.append(label, value);
+    selectedProductPanel.appendChild(row);
+  });
+  const note = document.createElement("p");
+  note.className = "muted";
+  note.textContent = "Shipping and tax are not included. Checkout is not available yet, so no BRM credits have been reserved or deducted and no card payment will be taken.";
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "btn secondary";
+  close.textContent = "Close details";
+  close.addEventListener("click", () => { selectedProductPanel.style.display = "none"; });
+  selectedProductPanel.prepend(heading, name, variation);
+  selectedProductPanel.append(note, close);
+  selectedProductPanel.style.display = "block";
+  selectedProductPanel.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
 
 // BRMMONEY MEMBER ACCOUNT FUNCTIONS
 
