@@ -48,12 +48,12 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <div class="grid"><div class="card"><div class="eyebrow">ONE SIMPLE PACKAGE</div><h2>$5.00 USD = 500 BRM</h2><p class="muted">Proposed redemption value: 1 BRM = $0.01 USD. Credits are issued only after a successful payment is confirmed.</p><div class="steps"><div>01 / Purchase<small>Square checkout in a future live version.</small></div><div>02 / Confirm<small>Verified payment, issued once.</small></div><div>03 / Redeem<small>Eligible marketplace products only.</small></div></div></div>
 <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Latest activity</h2><button class="btn secondary" onclick="showTab('transactions')">View all</button></div><div class="activity"><span>Example opening balance<br><small class="muted">Illustrative</small></span><b>+750 BRM</b></div></div></div>
 </section>
-<section id="market" class="panel"><div class="card"><div class="eyebrow">BRMMONEY MARKETPLACE</div><h1>Shop with BRM.</h1><p class="muted">Demo products only. Product eligibility and prices are examples, not connected to your Square catalog.</p>
-<div class="product"><div><h3>BRMMONEY Culture Tee</h3><span class="tag">BRM eligible · Demo</span></div><b>2,000 BRM</b></div>
-<div class="product"><div><h3>Community Sticker Pack</h3><span class="tag">BRM eligible · Demo</span></div><b>300 BRM</b></div>
-<div class="product"><div><h3>Limited Edition Hoodie</h3><span class="tag">BRM eligible · Demo</span></div><b>3,500 BRM</b></div>
-<p class="muted">Redemption is simulated. No order will be placed and no credits will be deducted.</p></div>
-<div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 500 BRM</p><button class="btn" onclick="alert('Demo only: Square checkout is not connected. No payment was taken and no BRM was issued.')">Preview $5 credit purchase</button></div></section>
+<section id="market" class="panel"><div class="card"><div class="eyebrow">BRMMONEY MARKETPLACE</div><h1>Shop with BRM.</h1><p class="muted">Live Square products approved for BRM redemption. Prices shown here come from your private synced catalog.</p>
+<button class="btn secondary" id="loadMarketplaceButton" type="button">Refresh approved products</button>
+<p id="marketplaceStatus" class="muted" aria-live="polite">Sign in to view approved products.</p>
+<div id="marketplaceProducts"></div>
+<p class="muted">Checkout is not open yet. Shipping and tax must be calculated from a verified provider before any member payment link can be created. No credits are deducted on this page.</p></div>
+<div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 500 BRM</p><button class="btn" id="marketBuyCreditsButton" onclick="startBRMCheckout()">Buy 500 BRM for $5.00</button><p id="checkoutStatus" class="muted" aria-live="polite">Sign in to purchase BRM credits.</p></div></section>
 <section id="transactions" class="panel">
   <div class="card">
     <div class="eyebrow">WALLET RECORD</div>
@@ -159,6 +159,23 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
       <span>Refunds and chargebacks</span><b>Manual review</b>
     </div>
 
+    <h2>Square product catalog</h2>
+    <p class="muted">Import your Square catalog into a private review list. Imported items stay unavailable for BRM redemption until you approve eligibility and set prices.</p>
+    <button class="btn" id="syncSquareCatalogButton" type="button">Sync Square Catalog</button>
+    <p id="catalogSyncMessage" class="muted" aria-live="polite">Not synced yet.</p>
+
+    <h2>Review Square products</h2>
+    <p class="muted">Review imported Square items. Only products you approve and give a BRM price can be made eligible. Archived items cannot be approved.</p>
+    <button class="btn secondary" id="loadSquareProductsButton" type="button">Load products for review</button>
+    <p id="squareProductsStatus" class="muted" aria-live="polite">Catalog imported. Load the products when you are ready to review them.</p>
+    <div id="squareProductsList"></div>
+
+    <h2>Split-checkout shipping and tax review</h2>
+    <p class="muted">Review member checkout reservations. Enter shipping and tax only after verifying the actual carrier quote and tax calculation. Saving a quote does not start payment.</p>
+    <button class="btn secondary" id="loadCheckoutReservationsButton" type="button">Load checkout reservations</button>
+    <p id="checkoutReservationsStatus" class="muted" aria-live="polite">No reservations loaded.</p>
+    <div id="checkoutReservationsList"></div>
+
     <h2>Issue a member reward</h2>
 
     <label for="rewardUserId">Member User ID</label>
@@ -261,8 +278,125 @@ function drawCommunityChart() {
 }
 
 drawCommunityChart();
-function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));window.scrollTo({top:0,behavior:'smooth'})}
+function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==="market")loadMarketplaceProducts();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+async function startBRMCheckout() {
+  const button = document.getElementById("marketBuyCreditsButton");
+  const status = document.getElementById("checkoutStatus");
+  button.disabled = true;
+  status.textContent = "Checking your member sign-in...";
+  try {
+    let { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError) throw sessionError;
+    let session = sessionData?.session;
+
+    // Recover a valid session if the tab's initial auth state is still settling.
+    if (!session) {
+      const refreshed = await supabaseClient.auth.refreshSession();
+      if (!refreshed.error) session = refreshed.data?.session || null;
+    }
+    if (!session) {
+      status.textContent = "Please sign in first to continue to secure Square checkout.";
+      button.disabled = false;
+      showTab("member");
+      return;
+    }
+    status.textContent = "Creating your secure $5.00 Square checkout...";
+    const { data, error } = await supabaseClient.functions.invoke("create-brm-checkout", {
+      body: {},
+      headers: { Authorization: "Bearer " + session.access_token }
+    });
+    if (error) throw error;
+    if (!data?.checkout_url || typeof data.checkout_url !== "string" || !data.checkout_url.startsWith("https://")) {
+      throw new Error(data?.error || "Checkout link was not returned. Please try again.");
+    }
+    status.textContent = "Opening secure Square checkout...";
+    window.location.assign(data.checkout_url);
+  } catch (error) {
+    status.textContent = error?.message || "Could not start checkout. Please try again.";
+    button.disabled = false;
+  }
+}
+// MEMBER MARKETPLACE — READ-ONLY LIVE APPROVED SQUARE PRODUCTS
+const marketplaceStatus = document.getElementById("marketplaceStatus");
+const marketplaceProducts = document.getElementById("marketplaceProducts");
+const loadMarketplaceButton = document.getElementById("loadMarketplaceButton");
+
+async function loadMarketplaceProducts() {
+  if (!marketplaceStatus || !marketplaceProducts) return;
+  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+  if (sessionError || !sessionData.session) {
+    marketplaceStatus.textContent = "Please sign in to view approved products.";
+    marketplaceProducts.replaceChildren();
+    return;
+  }
+  if (loadMarketplaceButton) loadMarketplaceButton.disabled = true;
+  marketplaceStatus.textContent = "Loading approved Square products...";
+  marketplaceProducts.replaceChildren();
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("list-brm-marketplace", {
+      method: "GET",
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || "Marketplace could not be loaded.");
+    const products = data.products || [];
+    marketplaceStatus.textContent = products.length + " approved product variation(s) available.";
+    if (!products.length) {
+      marketplaceProducts.textContent = "No products are currently approved for BRM redemption.";
+      return;
+    }
+    products.forEach((product) => {
+      const card = document.createElement("div");
+      card.className = "product";
+      const details = document.createElement("div");
+      details.style.flex = "1";
+      details.style.minWidth = "0";
+      if (product.image_url) {
+        const image = document.createElement("img");
+        image.src = product.image_url;
+        image.alt = "";
+        image.loading = "lazy";
+        image.style.width = "76px";
+        image.style.height = "76px";
+        image.style.objectFit = "cover";
+        image.style.borderRadius = "10px";
+        image.style.float = "left";
+        image.style.marginRight = "12px";
+        details.appendChild(image);
+      }
+      const name = document.createElement("h3");
+      name.textContent = product.item_name || "Square product";
+      const variation = document.createElement("p");
+      variation.className = "muted";
+      variation.textContent = product.variation_name || "Default variation";
+      const prices = document.createElement("p");
+      prices.className = "muted";
+      const squarePrice = Number(product.price_cents) / 100;
+      const brmDiscount = Number(product.brm_price) / 100;
+      const remaining = squarePrice - brmDiscount;
+      prices.textContent = "Square price " + moneyFromCents(product.price_cents) +
+        " · BRM discount " + Number(product.brm_price).toLocaleString() + " BRM (" +
+        moneyFromCents(product.brm_price) + ") · Card subtotal " + moneyFromCents(Math.round(remaining * 100)) +
+        " before shipping and tax";
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = "Owner approved for BRM";
+      details.append(name, variation, prices, tag);
+      const unavailable = document.createElement("p");
+      unavailable.className = "muted";
+      unavailable.textContent = "Checkout opening after verified shipping and tax integration.";
+      card.append(details, unavailable);
+      marketplaceProducts.appendChild(card);
+    });
+  } catch (error) {
+    marketplaceStatus.textContent = error?.message || "Could not load approved products.";
+  } finally {
+    if (loadMarketplaceButton) loadMarketplaceButton.disabled = false;
+  }
+}
+if (loadMarketplaceButton) loadMarketplaceButton.addEventListener("click", loadMarketplaceProducts);
+
 // BRMMONEY MEMBER ACCOUNT FUNCTIONS
 
 const memberEmail = document.getElementById("memberEmail");
@@ -500,6 +634,304 @@ document.getElementById("saveNewPassword").addEventListener("click", async () =>
   newMemberPassword.value = "";
   memberMessage.textContent = "Your new password has been saved! You can now sign in.";
 });
+// OWNER-ONLY SQUARE CATALOG IMPORT
+document.getElementById("syncSquareCatalogButton").addEventListener("click", async () => {
+  const button = document.getElementById("syncSquareCatalogButton");
+  const message = document.getElementById("catalogSyncMessage");
+  button.disabled = true;
+  message.textContent = "Verifying owner access and syncing your Square catalog...";
+  try {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      message.textContent = "Please sign in with your authorized owner account first.";
+      return;
+    }
+    const { data, error } = await supabaseClient.functions.invoke("sync-square-catalog", {
+      body: {},
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || "Catalog sync did not complete.");
+    message.textContent = "Catalog sync complete: " + data.items + " Square items and " +
+      data.variationsSaved + " product variations imported. All remain BRM-ineligible pending review.";
+  } catch (error) {
+    message.textContent = error?.message || "Catalog sync failed. Check the Supabase function logs.";
+  } finally {
+    button.disabled = false;
+  }
+});
+
+// OWNER-ONLY SQUARE CATALOG REVIEW
+const loadSquareProductsButton = document.getElementById("loadSquareProductsButton");
+const squareProductsStatus = document.getElementById("squareProductsStatus");
+const squareProductsList = document.getElementById("squareProductsList");
+
+async function callCatalogManager(payload) {
+  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+  if (sessionError || !sessionData.session) throw new Error("Please sign in with your owner account.");
+  const { data, error } = await supabaseClient.functions.invoke("manage-square-catalog", {
+    body: payload,
+    headers: { Authorization: "Bearer " + sessionData.session.access_token }
+  });
+  if (error) throw error;
+  if (!data?.success) throw new Error(data?.error || "Catalog request failed.");
+  return data;
+}
+
+async function loadSquareProducts() {
+  loadSquareProductsButton.disabled = true;
+  squareProductsStatus.textContent = "Loading imported Square products...";
+  squareProductsList.replaceChildren();
+  try {
+    const data = await callCatalogManager({ action: "list" });
+    squareProductsStatus.textContent = data.products.length + " product variations loaded. All changes are owner-only.";
+    data.products.forEach((product) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.marginTop = "14px";
+
+      const heading = document.createElement("div");
+      heading.style.display = "flex";
+      heading.style.alignItems = "center";
+      heading.style.gap = "12px";
+
+      if (product.image_url) {
+        const image = document.createElement("img");
+        image.src = product.image_url;
+        image.alt = "";
+        image.loading = "lazy";
+        image.style.width = "64px";
+        image.style.height = "64px";
+        image.style.objectFit = "cover";
+        image.style.borderRadius = "10px";
+        heading.appendChild(image);
+      }
+
+      const title = document.createElement("div");
+      const name = document.createElement("h3");
+      name.textContent = product.item_name || "Unnamed Square item";
+      const variation = document.createElement("p");
+      variation.className = "muted";
+      variation.textContent = (product.variation_name || "Default variation") +
+        (product.sku ? " · SKU " + product.sku : "");
+      title.append(name, variation);
+      heading.appendChild(title);
+      card.appendChild(heading);
+
+      const squarePrice = document.createElement("p");
+      squarePrice.className = "muted";
+      squarePrice.textContent = product.price_cents == null
+        ? "Square price not set"
+        : "Square price: " + new Intl.NumberFormat("en-US", {
+            style: "currency", currency: product.currency || "USD"
+          }).format(product.price_cents / 100);
+      card.appendChild(squarePrice);
+
+      if (product.is_archived) {
+        const archived = document.createElement("p");
+        archived.className = "muted";
+        archived.textContent = "Archived in Square — cannot be approved";
+        card.appendChild(archived);
+      }
+
+      const label = document.createElement("label");
+      label.textContent = "BRM redemption price (whole BRM)";
+      label.style.display = "block";
+      label.style.marginTop = "10px";
+      const priceInput = document.createElement("input");
+      priceInput.type = "number";
+      priceInput.min = "1";
+      priceInput.max = "10000000";
+      priceInput.step = "1";
+      priceInput.placeholder = "Set BRM price";
+      priceInput.value = product.brm_price ?? "";
+      priceInput.style.width = "100%";
+      priceInput.disabled = product.is_archived;
+      label.appendChild(priceInput);
+      card.appendChild(label);
+
+      const eligibleLabel = document.createElement("label");
+      eligibleLabel.style.display = "flex";
+      eligibleLabel.style.alignItems = "center";
+      eligibleLabel.style.gap = "9px";
+      eligibleLabel.style.marginTop = "12px";
+      const eligibleInput = document.createElement("input");
+      eligibleInput.type = "checkbox";
+      eligibleInput.checked = product.is_brm_eligible === true;
+      eligibleInput.disabled = product.is_archived;
+      eligibleLabel.append(eligibleInput, document.createTextNode("Approve for BRM redemption"));
+      card.appendChild(eligibleLabel);
+
+      const saveButton = document.createElement("button");
+      saveButton.className = "btn";
+      saveButton.type = "button";
+      saveButton.textContent = "Save product review";
+      saveButton.disabled = product.is_archived;
+      const result = document.createElement("p");
+      result.className = "muted";
+      result.setAttribute("aria-live", "polite");
+      saveButton.addEventListener("click", async () => {
+        const amount = priceInput.value.trim() === "" ? null : Number(priceInput.value);
+        if (eligibleInput.checked && (!Number.isSafeInteger(amount) || amount < 1)) {
+          result.textContent = "Enter a whole BRM price before approving this item.";
+          return;
+        }
+        saveButton.disabled = true;
+        result.textContent = "Saving review...";
+        try {
+          await callCatalogManager({
+            action: "update",
+            id: product.id,
+            is_brm_eligible: eligibleInput.checked,
+            brm_price: eligibleInput.checked ? amount : null
+          });
+          result.textContent = eligibleInput.checked
+            ? "Saved. Approved for BRM redemption with a price of " + amount.toLocaleString() + " BRM."
+            : "Saved. This product remains unavailable for BRM redemption.";
+        } catch (error) {
+          result.textContent = error?.message || "Could not save this product.";
+        } finally {
+          saveButton.disabled = false;
+        }
+      });
+      card.append(saveButton, result);
+      squareProductsList.appendChild(card);
+    });
+  } catch (error) {
+    squareProductsStatus.textContent = error?.message || "Could not load the review catalog.";
+  } finally {
+    loadSquareProductsButton.disabled = false;
+  }
+}
+loadSquareProductsButton.addEventListener("click", loadSquareProducts);
+
+// OWNER-ONLY BRM SPLIT-CHECKOUT SHIPPING AND TAX REVIEW
+const loadCheckoutReservationsButton = document.getElementById("loadCheckoutReservationsButton");
+const checkoutReservationsStatus = document.getElementById("checkoutReservationsStatus");
+const checkoutReservationsList = document.getElementById("checkoutReservationsList");
+
+async function ownerFunction(name, payload, method = "POST") {
+  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+  if (sessionError || !sessionData.session) throw new Error("Please sign in with your owner account.");
+  const { data, error } = await supabaseClient.functions.invoke(name, {
+    method,
+    body: method === "GET" ? undefined : payload,
+    headers: { Authorization: "Bearer " + sessionData.session.access_token }
+  });
+  if (error) throw error;
+  if (!data?.success) throw new Error(data?.error || "Owner request failed.");
+  return data;
+}
+
+function moneyFromCents(value) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value || 0) / 100);
+}
+
+async function loadCheckoutReservations() {
+  loadCheckoutReservationsButton.disabled = true;
+  checkoutReservationsStatus.textContent = "Loading private checkout reservations...";
+  checkoutReservationsList.replaceChildren();
+  try {
+    const data = await ownerFunction("owner-list-brm-checkout-reservations", null, "GET");
+    const reservations = data.reservations || [];
+    checkoutReservationsStatus.textContent = reservations.length + " active or expired reservation(s) found.";
+    if (!reservations.length) {
+      checkoutReservationsList.textContent = "No pending checkout reservations.";
+      return;
+    }
+    reservations.forEach((r) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.marginTop = "14px";
+      const heading = document.createElement("h3");
+      heading.textContent = r.product_name || "Marketplace product";
+      const summary = document.createElement("p");
+      summary.className = "muted";
+      summary.textContent = "Reservation: " + r.id + " · " +
+        Number(r.brm_credits || 0).toLocaleString() + " BRM reserved · Card portion before shipping/tax: " +
+        moneyFromCents(r.card_due_cents) + " · Expires: " + new Date(r.expires_at).toLocaleString();
+      const address = document.createElement("p");
+      address.className = "muted";
+      address.textContent = "Ship to: " + [r.shipping_address_line1, r.shipping_address_line2, r.shipping_city,
+        r.shipping_state_region, r.shipping_postal_code, r.shipping_country_code].filter(Boolean).join(", ");
+      card.append(heading, summary, address);
+      if (r.expired) {
+        const expired = document.createElement("p");
+        expired.className = "muted";
+        expired.textContent = "Expired reservation — do not quote or issue checkout.";
+        card.appendChild(expired);
+      } else {
+        const shippingLabel = document.createElement("label");
+        shippingLabel.textContent = "Verified shipping amount (USD)";
+        shippingLabel.style.display = "block";
+        const shippingInput = document.createElement("input");
+        shippingInput.type = "number"; shippingInput.min = "0"; shippingInput.step = "0.01";
+        shippingInput.placeholder = "0.00"; shippingInput.value = (Number(r.shipping_cents || 0) / 100).toFixed(2);
+        shippingLabel.appendChild(shippingInput);
+        const taxLabel = document.createElement("label");
+        taxLabel.textContent = "Verified tax amount (USD)";
+        taxLabel.style.display = "block";
+        const taxInput = document.createElement("input");
+        taxInput.type = "number"; taxInput.min = "0"; taxInput.step = "0.01";
+        taxInput.placeholder = "0.00"; taxInput.value = (Number(r.tax_cents || 0) / 100).toFixed(2);
+        taxLabel.appendChild(taxInput);
+        const sourceLabel = document.createElement("label");
+        sourceLabel.textContent = "Quote source (carrier / tax provider)";
+        sourceLabel.style.display = "block";
+        const sourceInput = document.createElement("input");
+        sourceInput.type = "text"; sourceInput.maxLength = 80; sourceInput.placeholder = "Name of verified quote source";
+        sourceLabel.appendChild(sourceInput);
+        const referenceLabel = document.createElement("label");
+        referenceLabel.textContent = "Quote reference (optional)";
+        referenceLabel.style.display = "block";
+        const referenceInput = document.createElement("input");
+        referenceInput.type = "text"; referenceInput.maxLength = 160; referenceInput.placeholder = "Quote or calculation reference";
+        referenceLabel.appendChild(referenceInput);
+        const save = document.createElement("button");
+        save.className = "btn"; save.type = "button"; save.textContent = "Save verified shipping and tax";
+        const result = document.createElement("p");
+        result.className = "muted"; result.setAttribute("aria-live", "polite");
+        save.addEventListener("click", async () => {
+          const shipping = Number(shippingInput.value);
+          const tax = Number(taxInput.value);
+          if (!Number.isFinite(shipping) || !Number.isFinite(tax) || shipping < 0 || tax < 0 ||
+              Math.round(shipping * 100) !== shipping * 100 || Math.round(tax * 100) !== tax * 100 ||
+              !sourceInput.value.trim()) {
+            result.textContent = "Enter valid USD amounts to the cent and the verified quote source.";
+            return;
+          }
+          save.disabled = true;
+          result.textContent = "Saving verified quote...";
+          try {
+            const saved = await ownerFunction("owner-apply-brm-checkout-quote", {
+              reservation_id: r.id,
+              shipping_cents: Math.round(shipping * 100),
+              tax_cents: Math.round(tax * 100),
+              quote_source: sourceInput.value.trim(),
+              quote_reference: referenceInput.value.trim() || undefined
+            });
+            result.textContent = "Quote saved. Shipping " + moneyFromCents(saved.shipping_cents) +
+              " · Tax " + moneyFromCents(saved.tax_cents) + " · Card total " +
+              moneyFromCents(saved.total_card_due_cents) +
+              ". This is still not a payment link; verify the quote before proceeding.";
+          } catch (error) {
+            result.textContent = error?.message || "Could not save the quote.";
+          } finally {
+            save.disabled = false;
+          }
+        });
+        card.append(shippingLabel, taxLabel, sourceLabel, referenceLabel, save, result);
+      }
+      checkoutReservationsList.appendChild(card);
+    });
+  } catch (error) {
+    checkoutReservationsStatus.textContent = error?.message || "Could not load checkout reservations.";
+  } finally {
+    loadCheckoutReservationsButton.disabled = false;
+  }
+}
+loadCheckoutReservationsButton.addEventListener("click", loadCheckoutReservations);
+
 // BRMMONEY OWNER REWARD CONTROLS
 document.getElementById("issueRewardButton").addEventListener("click", async () => {
   const button = document.getElementById("issueRewardButton");
