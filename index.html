@@ -61,8 +61,10 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <label for="shipState">State</label><input id="shipState" autocomplete="address-level1" maxlength="100" placeholder="State">
 <label for="shipZip">ZIP code</label><input id="shipZip" autocomplete="postal-code" maxlength="20" placeholder="ZIP code">
 <label for="shipCountry">Country</label><select id="shipCountry"><option value="US" selected>United States</option></select>
+<button class="btn secondary" id="runMarketplacePreflightButton" type="button">Run no-charge checkout check</button>
+<p id="marketplacePreflightMessage" class="muted" aria-live="polite">Safe check only: estimates TaxJar tax and the card balance. It does not reserve BRM credits, create a Square link, or charge a card.</p>
 <button class="btn" id="startMarketplaceCheckoutButton" type="button">Calculate tax and continue to Square</button>
-<p id="marketplaceCheckoutMessage" class="muted" aria-live="polite">Tax is calculated on the full Square product price before BRM credits. $6 U.S. shipping applies.</p>
+<p id="marketplaceCheckoutMessage" class="muted" aria-live="polite">Live checkout is a separate action. Tax is calculated on the full Square product price before BRM credits. $6 U.S. shipping applies.</p>
 </div>
 <div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 500 BRM</p><button class="btn" id="marketBuyCreditsButton" onclick="startBRMCheckout()">Buy 500 BRM for $5.00</button><p id="checkoutStatus" class="muted" aria-live="polite">Sign in to purchase BRM credits.</p></div></section>
 <section id="transactions" class="panel">
@@ -354,6 +356,52 @@ async function loadMarketplaceProducts() {
   }
 }
 document.getElementById("loadMarketplaceButton").addEventListener("click", loadMarketplaceProducts);
+
+document.getElementById("runMarketplacePreflightButton").addEventListener("click", async () => {
+  const button = document.getElementById("runMarketplacePreflightButton");
+  const status = document.getElementById("marketplacePreflightMessage");
+  if (!selectedMarketplaceProduct) {
+    status.textContent = "Choose an approved product first.";
+    return;
+  }
+  const address = {
+    address_line1: document.getElementById("shipLine1").value.trim(),
+    address_line2: document.getElementById("shipLine2").value.trim(),
+    city: document.getElementById("shipCity").value.trim(),
+    state_region: document.getElementById("shipState").value.trim(),
+    postal_code: document.getElementById("shipZip").value.trim(),
+    country_code: document.getElementById("shipCountry").value
+  };
+  if (!address.address_line1 || !address.city || !address.state_region || !address.postal_code) {
+    status.textContent = "Enter your street, city, state, and ZIP code to run the safe check.";
+    return;
+  }
+  button.disabled = true;
+  status.textContent = "Running safe TaxJar estimate. No credits are being reserved and no payment link will be created...";
+  try {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !sessionData.session) throw new Error("Please sign in to run the preflight check.");
+    const { data, error } = await supabaseClient.functions.invoke("member-brm-marketplace-preflight", {
+      body: { product_id: selectedMarketplaceProduct.id, ...address },
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
+    if (error) throw error;
+    if (!data?.success || data.preflight_only !== true || data.square_payment_link_created !== false)
+      throw new Error(data?.error || "Preflight check did not return a safe result.");
+    status.textContent =
+      "NO-CHARGE CHECK PASSED — Product: $" + (data.product_price_cents / 100).toFixed(2) +
+      " · BRM value: $" + (data.brm_value_cents / 100).toFixed(2) +
+      " · Card product balance: $" + (data.card_product_balance_cents / 100).toFixed(2) +
+      " · Shipping: $" + (data.shipping_cents / 100).toFixed(2) +
+      " · Estimated tax: $" + (data.tax_cents / 100).toFixed(2) +
+      " · Estimated card total: $" + (data.total_estimated_card_due_cents / 100).toFixed(2) +
+      ". No BRM credits reserved, no Square link created, no TaxJar transaction recorded, and no payment taken.";
+  } catch (error) {
+    status.textContent = error?.message || "Preflight could not complete. No checkout or payment was created.";
+  } finally {
+    button.disabled = false;
+  }
+});
 
 document.getElementById("startMarketplaceCheckoutButton").addEventListener("click", async () => {
   const button = document.getElementById("startMarketplaceCheckoutButton");
