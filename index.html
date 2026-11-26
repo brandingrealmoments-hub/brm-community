@@ -417,7 +417,8 @@ function showSelectedMarketplaceProduct(product) {
   const rows = [
     ["Square item price", moneyFromCents(squareCents)],
     ["BRM credits to redeem", brmCredits.toLocaleString() + " BRM"],
-    ["Remaining card subtotal", moneyFromCents(cardCents)]
+    ["Remaining card subtotal", moneyFromCents(cardCents)],
+    ["Planned U.S. flat shipping fee", moneyFromCents(600)]
   ];
   rows.forEach(([labelText, valueText]) => {
     const row = document.createElement("div");
@@ -431,7 +432,7 @@ function showSelectedMarketplaceProduct(product) {
   });
   const note = document.createElement("p");
   note.className = "muted";
-  note.textContent = "Shipping and tax are not included. Checkout is not available yet, so no BRM credits have been reserved or deducted and no card payment will be taken.";
+  note.textContent = "The planned U.S. flat shipping fee is $6.00. It is shown for planning only and is not yet included in a payable total. Applicable tax is not yet calculated. Checkout is not available, so no BRM credits have been reserved or deducted and no card payment will be taken.";
   const close = document.createElement("button");
   close.type = "button";
   close.className = "btn secondary";
