@@ -63,8 +63,8 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <label for="shipCountry">Country</label><select id="shipCountry"><option value="US" selected>United States</option></select>
 <button class="btn secondary" id="runMarketplacePreflightButton" type="button">Run no-charge checkout check</button>
 <p id="marketplacePreflightMessage" class="muted" aria-live="polite">Safe check only: estimates TaxJar tax and the card balance. It does not reserve BRM credits, create a Square link, or charge a card.</p>
-<button class="btn" id="startMarketplaceCheckoutButton" type="button">Calculate tax and continue to Square</button>
-<p id="marketplaceCheckoutMessage" class="muted" aria-live="polite">Live checkout is a separate action. Tax is calculated on the full Square product price before BRM credits. $6 U.S. shipping applies.</p>
+<button class="btn" id="startMarketplaceCheckoutButton" type="button" disabled>Live checkout currently disabled</button>
+<p id="marketplaceCheckoutMessage" class="muted" aria-live="polite">Live Square checkout is temporarily disabled while final checks are completed. You can still run the no-charge checkout check above to review the product balance, $6 U.S. shipping, and estimated tax. No BRM credits are reserved and no card is charged during that check.</p>
 </div>
 <div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 500 BRM</p><button class="btn" id="marketBuyCreditsButton" onclick="startBRMCheckout()">Buy 500 BRM for $5.00</button><p id="checkoutStatus" class="muted" aria-live="polite">Sign in to purchase BRM credits.</p></div></section>
 <section id="transactions" class="panel">
