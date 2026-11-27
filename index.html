@@ -329,9 +329,12 @@ async function loadMarketplaceProducts() {
       tag.textContent = "Approved for BRM redemption";
       const price = document.createElement("p");
       price.className = "muted";
+      const productBalanceCents = Math.max(0, product.price_cents - product.brm_price);
       price.textContent = "Square price: $" + (product.price_cents / 100).toFixed(2) +
         " · BRM: " + Number(product.brm_price).toLocaleString() +
-        " · Card product balance: $" + ((product.price_cents - product.brm_price) / 100).toFixed(2);
+        (productBalanceCents === 0
+          ? " · Product fully covered by BRM credits; card payment is shipping + applicable tax"
+          : " · Remaining product balance: $" + (productBalanceCents / 100).toFixed(2) + " before shipping and tax");
       info.append(title, tag, price);
       const choose = document.createElement("button");
       choose.className = "btn";
@@ -388,14 +391,20 @@ document.getElementById("runMarketplacePreflightButton").addEventListener("click
     if (error) throw error;
     if (!data?.success || data.preflight_only !== true || data.square_payment_link_created !== false)
       throw new Error(data?.error || "Preflight check did not return a safe result.");
+    const productCovered = Number(data.card_product_balance_cents) === 0;
     status.textContent =
       "NO-CHARGE CHECK PASSED — Product: $" + (data.product_price_cents / 100).toFixed(2) +
       " · BRM value: $" + (data.brm_value_cents / 100).toFixed(2) +
-      " · Card product balance: $" + (data.card_product_balance_cents / 100).toFixed(2) +
+      (productCovered
+        ? " · Product fully covered by BRM credits"
+        : " · Remaining product balance: $" + (data.card_product_balance_cents / 100).toFixed(2)) +
       " · Shipping: $" + (data.shipping_cents / 100).toFixed(2) +
       " · Estimated tax: $" + (data.tax_cents / 100).toFixed(2) +
       " · Estimated card total: $" + (data.total_estimated_card_due_cents / 100).toFixed(2) +
-      ". No BRM credits reserved, no Square link created, no TaxJar transaction recorded, and no payment taken.";
+      (productCovered
+        ? ". Card payment is for shipping and applicable tax only."
+        : ". Card payment includes the remaining product balance, shipping, and applicable tax.") +
+      " No BRM credits reserved, no Square link created, no TaxJar transaction recorded, and no payment taken.";
   } catch (error) {
     status.textContent = error?.message || "Preflight could not complete. No checkout or payment was created.";
   } finally {
@@ -438,10 +447,16 @@ document.getElementById("startMarketplaceCheckoutButton").addEventListener("clic
     if (!data?.success || !data.checkout_url || !data.checkout_url.startsWith("https://"))
       throw new Error(data?.error || "Secure Square checkout was not created.");
     marketplaceCheckoutMessage.textContent =
+      (data.product_fully_covered_by_brm
+        ? "BRM credits cover the full product price. "
+        : "Remaining product balance: $" + (data.card_due_cents / 100).toFixed(2) + ". ") +
       "Tax: $" + (data.tax_cents / 100).toFixed(2) +
       " · Shipping: $" + (data.shipping_cents / 100).toFixed(2) +
       " · Card payment: $" + (data.total_card_due_cents / 100).toFixed(2) +
-      ". Opening Square. Your BRM credits are reserved and will only be deducted after confirmed payment.";
+      (data.product_fully_covered_by_brm
+        ? ". Card payment is shipping and applicable tax only."
+        : ". Card payment includes the remaining product balance, shipping, and applicable tax.") +
+      " Opening Square. Your BRM credits are reserved and will only be deducted after confirmed payment.";
     window.location.assign(data.checkout_url);
   } catch (error) {
     marketplaceCheckoutMessage.textContent = error?.message || "Checkout could not be started. No payment was taken.";
