@@ -46,7 +46,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <section id="wallet" class="panel active">
 <div class="hero"><div><div class="eyebrow">YOUR COMMUNITY. YOUR CREDITS.</div><h1>A little credit.<br>A world of possibility.</h1><p>Buy BRM credits. Discover eligible products. Keep every transaction in one place.</p><button class="btn" onclick="showTab('market')">Buy BRM credits →</button></div>
 <div class="wallet"><div><div class="eyebrow">YOUR BRM WALLET</div><div class="balance" id="balance">0 <span>BRM</span></div><p id="dollar">$0.00 toward eligible products</p></div><p class="muted">Not transferable · No cash exchange, except as required by law</p></div></div>
-<div class="grid"><div class="card"><div class="eyebrow">ONE SIMPLE PACKAGE</div><h2>$5.00 USD = 500 BRM</h2><p class="muted">Proposed redemption value: 1 BRM = $0.01 USD. Credits are issued only after a successful payment is confirmed.</p><div class="steps"><div>01 / Purchase<small>Secure Square-hosted checkout.</small></div><div>02 / Confirm<small>Verified payment, issued once.</small></div><div>03 / Redeem<small>Eligible marketplace products only.</small></div></div></div>
+<div class="grid"><div class="card"><div class="eyebrow">ONE SIMPLE PACKAGE</div><h2>$5.00 USD = 50 BRM</h2><p class="muted">Redemption value: 1 BRM = $0.10 USD. Credits are issued only after a successful payment is confirmed.</p><div class="steps"><div>01 / Purchase<small>Secure Square-hosted checkout.</small></div><div>02 / Confirm<small>Verified payment, issued once.</small></div><div>03 / Redeem<small>Eligible marketplace products only.</small></div></div></div>
 <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Latest activity</h2><button class="btn secondary" onclick="showTab('transactions')">View all</button></div><p class="muted">Your recent wallet activity will appear here after you sign in.</p></div></div>
 </section>
 <section id="market" class="panel"><div class="card"><div class="eyebrow">BRMMONEY MARKETPLACE</div><h1>Shop with BRM.</h1><p class="muted">Live approved products from your Square catalog. BRM credits are reserved during checkout and deducted only after Square confirms payment.</p>
@@ -66,7 +66,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <button class="btn" id="startMarketplaceCheckoutButton" type="button" disabled>Live checkout currently disabled</button>
 <p id="marketplaceCheckoutMessage" class="muted" aria-live="polite">Live Square checkout is temporarily disabled while final checks are completed. You can still run the no-charge checkout check above to review the product balance, $6 U.S. shipping, and estimated tax. No BRM credits are reserved and no card is charged during that check.</p>
 </div>
-<div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 500 BRM</p><button class="btn" id="marketBuyCreditsButton" onclick="startBRMCheckout()">Buy 500 BRM for $5.00</button><p id="checkoutStatus" class="muted" aria-live="polite">Sign in to purchase BRM credits.</p></div></section>
+<div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 50 BRM</p><button class="btn" id="marketBuyCreditsButton" onclick="startBRMCheckout()">Buy 50 BRM for $5.00</button><p id="checkoutStatus" class="muted" aria-live="polite">Sign in to purchase BRM credits.</p></div></section>
 <section id="transactions" class="panel">
   <div class="card">
     <div class="eyebrow">WALLET RECORD</div>
@@ -163,7 +163,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     </p>
 
     <div class="activity">
-      <span>Credit package</span><b>$5 = 500 BRM</b>
+      <span>Credit package</span><b>$5 = 50 BRM</b>
     </div>
     <div class="activity">
       <span>Expiration</span><b>Disabled</b>
@@ -241,7 +241,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
   </div>
 </section>
 </main>
-<footer><b>BRMMONEY Community</b><br>BRM credits are issued only after Square confirms a successful $5.00 USD payment. Each confirmed package adds 500 BRM. Credits are for eligible marketplace products only; transfers and cash-out are not offered, subject to applicable law. Marketplace listings are sourced from your approved Square catalog. Community activity figures shown above and in the chart are live rolling 7-day totals from Supabase; a zero means no matching activity was recorded for that period. BRM credits are not publicly traded cryptocurrency or an investment.<br><br>Program rules and reward settings are still being finalized and are not a final legal policy. Credit expiration is currently disabled. Refund and chargeback events are sent for manual review; automatic reversals are disabled.</footer>
+<footer><b>BRMMONEY Community</b><br>BRM credits are issued only after Square confirms a successful $5.00 USD payment. Each confirmed $5.00 package adds 50 BRM at a redemption value of $0.10 per BRM. Credits are for eligible marketplace products only; transfers and cash-out are not offered, subject to applicable law. Marketplace listings are sourced from your approved Square catalog. Community activity figures shown above and in the chart are live rolling 7-day totals from Supabase; a zero means no matching activity was recorded for that period. BRM credits are not publicly traded cryptocurrency or an investment.<br><br>Program rules and reward settings are still being finalized and are not a final legal policy. Credit expiration is currently disabled. Refund and chargeback events are sent for manual review; automatic reversals are disabled.</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // BRMMONEY Community — Supabase connection
