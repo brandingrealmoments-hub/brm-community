@@ -418,10 +418,10 @@ async function loadMarketplaceProducts() {
       tag.textContent = "Approved for BRM redemption";
       const price = document.createElement("p");
       price.className = "muted";
-      const productBalanceCents = Math.max(0, product.price_cents - product.brm_price);
+      const productBalanceCents = Math.max(0, product.price_cents - (product.brm_price * 10));
       price.textContent = "Square price: $" + (product.price_cents / 100).toFixed(2) +
         " · BRM credits applied: " + Number(product.brm_price).toLocaleString() +
-        " BRM ($" + (Number(product.brm_price) / 100).toFixed(2) + ")" +
+        " BRM ($" + (Number(product.brm_price) / 10).toFixed(2) + ")" +
         (productBalanceCents === 0
           ? " · Product price fully covered by BRM credits; card payment is shipping + applicable tax"
           : " · Remaining product balance: $" + (productBalanceCents / 100).toFixed(2) + " before shipping and tax");
@@ -438,7 +438,7 @@ async function loadMarketplaceProducts() {
           (product.sku ? " · SKU " + product.sku : "") +
           " · Square price $" + (product.price_cents / 100).toFixed(2) +
           " · BRM credits applied " + Number(product.brm_price).toLocaleString() +
-          " BRM ($" + (Number(product.brm_price) / 100).toFixed(2) + ")";
+          " BRM ($" + (Number(product.brm_price) / 10).toFixed(2) + ")";
         marketplaceAddressCard.hidden = false;
         marketplaceCheckoutMessage.textContent = "Enter your U.S. shipping address. Tax will be calculated on the full Square price before BRM credits.";
         marketplaceAddressCard.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -695,7 +695,7 @@ async function updateMemberStatus(user) {
       balance.toLocaleString() + " <span>BRM</span>";
 
     dollarDisplay.textContent =
-      "$" + (balance / 100).toFixed(2) + " toward eligible products";
+      "$" + (balance / 10).toFixed(2) + " toward eligible products";
 
     memberMessage.textContent = "Your wallet is connected!";
     const checkoutStatus = document.getElementById("checkoutStatus");
