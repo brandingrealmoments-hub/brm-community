@@ -190,6 +190,12 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     <p id="expiredCheckoutCleanupStatus" class="muted" aria-live="polite">Run a preview before applying cleanup.</p>
     <div id="expiredCheckoutCleanupResults"></div>
 
+    <h2>Split-checkout shipping and tax review</h2>
+    <p class="muted">Review member checkout reservations. U.S. shipping is a fixed $6.00 flat fee. Enter only the separately verified tax amount. Saving a quote does not start payment.</p>
+    <button class="btn secondary" id="loadCheckoutReservationsButton" type="button">Load checkout reservations</button>
+    <p id="checkoutReservationsStatus" class="muted" aria-live="polite">No reservations loaded.</p>
+    <div id="checkoutReservationsList"></div>
+
     <h2>Issue a member reward</h2>
 
     <label for="rewardUserId">Member User ID</label>
@@ -219,7 +225,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
   </div>
 </section>
 </main>
-<footer><b>BRMMONEY Community</b><br>BRM credits are issued only after Square confirms a successful $5.00 USD payment. Each confirmed package adds 500 BRM. Credits are for eligible marketplace products only; transfers and cash-out are not offered, subject to applicable law. Marketplace listings and community activity figures are still preview content. BRM credits are not publicly traded cryptocurrency or an investment.<br><br>Proposed rules, not a final legal policy. Expiration is unset and disabled. Refund and chargeback events go to review; automatic reversals are disabled.</footer>
+<footer><b>BRMMONEY Community</b><br>BRM credits are issued only after Square confirms a successful $5.00 USD payment. Each confirmed package adds 500 BRM. Credits are for eligible marketplace products only; transfers and cash-out are not offered, subject to applicable law. Marketplace listings are sourced from your approved Square catalog; community activity figures are preview content. BRM credits are not publicly traded cryptocurrency or an investment.<br><br>Proposed rules, not a final legal policy. Expiration is unset and disabled. Refund and chargeback events go to review; automatic reversals are disabled.</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // BRMMONEY Community — Supabase connection
@@ -508,7 +514,7 @@ async function startBRMCheckout() {
     button.disabled = false;
   }
 }
-function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));window.scrollTo({top:0,behavior:'smooth'})}
+function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='market')loadMarketplaceProducts();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 // BRMMONEY MEMBER ACCOUNT FUNCTIONS
 
@@ -998,6 +1004,132 @@ cleanupApplyButton.addEventListener("click", async () => {
   if (!window.confirm("Cancel only the expired Square checkout links that passed the payment checks, then release their reserved BRM credits?")) return;
   await runExpiredCheckoutCleanup(true);
 });
+
+// OWNER-ONLY BRM SPLIT-CHECKOUT SHIPPING AND TAX REVIEW
+const loadCheckoutReservationsButton = document.getElementById("loadCheckoutReservationsButton");
+const checkoutReservationsStatus = document.getElementById("checkoutReservationsStatus");
+const checkoutReservationsList = document.getElementById("checkoutReservationsList");
+
+async function ownerFunction(name, payload, method = "POST") {
+  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+  if (sessionError || !sessionData.session) throw new Error("Please sign in with your owner account.");
+  const { data, error } = await supabaseClient.functions.invoke(name, {
+    method,
+    body: method === "GET" ? undefined : payload,
+    headers: { Authorization: "Bearer " + sessionData.session.access_token }
+  });
+  if (error) throw error;
+  if (!data?.success) throw new Error(data?.error || "Owner request failed.");
+  return data;
+}
+
+function moneyFromCents(value) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value || 0) / 100);
+}
+
+async function loadCheckoutReservations() {
+  loadCheckoutReservationsButton.disabled = true;
+  checkoutReservationsStatus.textContent = "Loading private checkout reservations...";
+  checkoutReservationsList.replaceChildren();
+  try {
+    const data = await ownerFunction("owner-list-brm-checkout-reservations", null, "GET");
+    const reservations = data.reservations || [];
+    checkoutReservationsStatus.textContent = reservations.length + " active or expired reservation(s) found.";
+    if (!reservations.length) {
+      checkoutReservationsList.textContent = "No pending checkout reservations.";
+      return;
+    }
+    reservations.forEach((r) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.marginTop = "14px";
+      const heading = document.createElement("h3");
+      heading.textContent = r.product_name || "Marketplace product";
+      const summary = document.createElement("p");
+      summary.className = "muted";
+      summary.textContent = "Reservation: " + r.id + " · " +
+        Number(r.brm_credits || 0).toLocaleString() + " BRM reserved · Card portion before shipping/tax: " +
+        moneyFromCents(r.card_due_cents) + " · Expires: " + new Date(r.expires_at).toLocaleString();
+      const address = document.createElement("p");
+      address.className = "muted";
+      address.textContent = "Ship to: " + [r.shipping_address_line1, r.shipping_address_line2, r.shipping_city,
+        r.shipping_state_region, r.shipping_postal_code, r.shipping_country_code].filter(Boolean).join(", ");
+      card.append(heading, summary, address);
+      if (r.expired) {
+        const expired = document.createElement("p");
+        expired.className = "muted";
+        expired.textContent = "Expired reservation — do not quote or issue checkout.";
+        card.appendChild(expired);
+      } else {
+        const shippingLabel = document.createElement("label");
+        shippingLabel.textContent = "U.S. flat shipping fee (fixed)";
+        shippingLabel.style.display = "block";
+        const shippingInput = document.createElement("input");
+        shippingInput.type = "text"; shippingInput.value = "$6.00"; shippingInput.readOnly = true; shippingInput.setAttribute("aria-label", "Fixed U.S. flat shipping fee of six dollars");
+        shippingLabel.appendChild(shippingInput);
+        const taxLabel = document.createElement("label");
+        taxLabel.textContent = "Verified tax amount (USD)";
+        taxLabel.style.display = "block";
+        const taxInput = document.createElement("input");
+        taxInput.type = "number"; taxInput.min = "0"; taxInput.step = "0.01";
+        taxInput.placeholder = "0.00"; taxInput.value = (Number(r.tax_cents || 0) / 100).toFixed(2);
+        taxLabel.appendChild(taxInput);
+        const sourceLabel = document.createElement("label");
+        sourceLabel.textContent = "Quote source (carrier / tax provider)";
+        sourceLabel.style.display = "block";
+        const sourceInput = document.createElement("input");
+        sourceInput.type = "text"; sourceInput.maxLength = 80; sourceInput.placeholder = "Name of verified quote source";
+        sourceLabel.appendChild(sourceInput);
+        const referenceLabel = document.createElement("label");
+        referenceLabel.textContent = "Quote reference (optional)";
+        referenceLabel.style.display = "block";
+        const referenceInput = document.createElement("input");
+        referenceInput.type = "text"; referenceInput.maxLength = 160; referenceInput.placeholder = "Quote or calculation reference";
+        referenceLabel.appendChild(referenceInput);
+        const save = document.createElement("button");
+        save.className = "btn"; save.type = "button"; save.textContent = "Save verified shipping and tax";
+        const result = document.createElement("p");
+        result.className = "muted"; result.setAttribute("aria-live", "polite");
+        save.addEventListener("click", async () => {
+          const tax = Number(taxInput.value);
+          if (!Number.isFinite(tax) || tax < 0 ||
+              Math.round(tax * 100) !== tax * 100 ||
+              !sourceInput.value.trim()) {
+            result.textContent = "Enter valid USD amounts to the cent and the verified quote source.";
+            return;
+          }
+          save.disabled = true;
+          result.textContent = "Saving verified quote...";
+          try {
+            const saved = await ownerFunction("owner-apply-brm-checkout-quote", {
+              reservation_id: r.id,
+              tax_cents: Math.round(tax * 100),
+              quote_source: sourceInput.value.trim(),
+              quote_reference: referenceInput.value.trim() || undefined
+            });
+            result.textContent = "Quote saved. Shipping " + moneyFromCents(saved.shipping_cents) +
+              " · Tax " + moneyFromCents(saved.tax_cents) + " · Card total " +
+              moneyFromCents(saved.total_card_due_cents) +
+              ". This is still not a payment link; verify the quote before proceeding.";
+          } catch (error) {
+            result.textContent = error?.message || "Could not save the quote.";
+          } finally {
+            save.disabled = false;
+          }
+        });
+        card.append(shippingLabel, taxLabel, sourceLabel, referenceLabel, save, result);
+      }
+      checkoutReservationsList.appendChild(card);
+    });
+  } catch (error) {
+    checkoutReservationsStatus.textContent = error?.message || "Could not load checkout reservations.";
+  } finally {
+    loadCheckoutReservationsButton.disabled = false;
+  }
+}
+loadCheckoutReservationsButton.addEventListener("click", loadCheckoutReservations);
+
+
 
 // BRMMONEY OWNER REWARD CONTROLS
 document.getElementById("issueRewardButton").addEventListener("click", async () => {
