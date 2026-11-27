@@ -172,6 +172,14 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
       <span>Refunds and chargebacks</span><b>Manual review</b>
     </div>
 
+    <h2>Marketplace switch</h2>
+    <div class="activity">
+      <span>Checkout status</span><b id="ownerMarketplaceStatus">Closed</b>
+    </div>
+    <p class="muted">When closed, members cannot load approved items or create a checkout. Opening the marketplace enables checkout for eligible members.</p>
+    <button class="btn" id="ownerMarketplaceToggleButton" type="button">Open Marketplace</button>
+    <p id="ownerMarketplaceToggleMessage" class="muted" aria-live="polite">Marketplace is closed by default.</p>
+
     <h2>Square product catalog</h2>
     <p class="muted">Import your Square catalog into a private review list. Imported items stay unavailable for BRM redemption until you approve eligibility and set prices.</p>
     <button class="btn" id="syncSquareCatalogButton" type="button">Sync Square Catalog</button>
@@ -581,6 +589,7 @@ async function updateMemberStatus(user) {
 
       if (!ownerError && ownerData?.isOwner === true) {
         ownerTab.hidden = false;
+        setOwnerMarketplaceStatus(ownerData.marketplaceEnabled === true);
       }
     } catch (error) {
       console.error("Owner verification failed.");
@@ -997,6 +1006,38 @@ cleanupApplyButton.addEventListener("click", async () => {
   }
   if (!window.confirm("Cancel only the expired Square checkout links that passed the payment checks, then release their reserved BRM credits?")) return;
   await runExpiredCheckoutCleanup(true);
+});
+
+// OWNER MARKETPLACE SWITCH
+function setOwnerMarketplaceStatus(enabled) {
+  const status = document.getElementById("ownerMarketplaceStatus");
+  const button = document.getElementById("ownerMarketplaceToggleButton");
+  if (!status || !button) return;
+  status.textContent = enabled ? "OPEN" : "CLOSED";
+  button.textContent = enabled ? "Close Marketplace" : "Open Marketplace";
+  button.dataset.enabled = enabled ? "true" : "false";
+}
+document.getElementById("ownerMarketplaceToggleButton").addEventListener("click", async () => {
+  const button = document.getElementById("ownerMarketplaceToggleButton");
+  const message = document.getElementById("ownerMarketplaceToggleMessage");
+  const currentlyEnabled = button.dataset.enabled === "true";
+  const nextEnabled = !currentlyEnabled;
+  if (nextEnabled && !window.confirm("Open the BRMMONEY marketplace so eligible members can begin checkout?")) return;
+  button.disabled = true;
+  message.textContent = "Saving marketplace status...";
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("owner-marketplace-toggle", {
+      body: { enabled: nextEnabled }
+    });
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || "Marketplace setting did not save.");
+    setOwnerMarketplaceStatus(data.enabled === true);
+    message.textContent = data.enabled ? "Marketplace is open. Members can shop eligible products." : "Marketplace is closed. Member checkout is blocked.";
+  } catch (error) {
+    message.textContent = error?.message || "Could not update marketplace status.";
+  } finally {
+    button.disabled = false;
+  }
 });
 
 // BRMMONEY OWNER REWARD CONTROLS
