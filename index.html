@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BRMMONEY Community — Interactive Demo</title>
+<title>BRMMONEY Community</title>
 <style>
 :root{--green:#123f32;--green2:#1d503f;--lime:#d8f35b;--paper:#f5f6ef;--ink:#18251f;--muted:#68766e;--line:#dfe5dc}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Arial,Helvetica,sans-serif}
@@ -27,15 +27,16 @@ p{color:inherit}.hero p{color:#d4dfd7;max-width:390px}.wallet{background:var(--g
 h2{font-size:25px;margin:8px 0 12px}h3{margin:0 0 8px}.muted{color:var(--muted)}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}.steps div{border-top:1px solid var(--line);padding-top:14px;font-weight:700}.steps small{display:block;font-weight:400;color:var(--muted);margin-top:8px}
 .activity{display:flex;justify-content:space-between;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
 .panel{display:none}.panel.active{display:block}
-.product{display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:1px solid var(--line);padding:16px 0}.product:last-child{border:0}.product-select{border:0;background:var(--green);color:white;padding:10px 16px;border-radius:22px;font-weight:800;cursor:pointer;white-space:nowrap}.product-select:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+.product{display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:1px solid var(--line);padding:16px 0}.product:last-child{border:0}
 .tag{font-size:11px;background:#edf3e8;border-radius:20px;padding:5px 9px;color:#34553c}
+input,select{display:block;width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;margin:6px 0 14px;font:inherit;background:white;color:var(--ink)}label{display:block;font-weight:700;margin-top:10px}
 footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 @media(max-width:700px){.hero,.grid{grid-template-columns:1fr}.hero>div{padding:28px}.balance{font-size:48px}.steps{grid-template-columns:1fr}header{margin-top:20px}}
 </style>
 </head>
 <body>
-<div class="notice"><span>INTERACTIVE PREVIEW · SIMULATED DATA ONLY</span><span>No live payments · No Square connection · Resets on reload</span></div>
-<header><div class="brand"><div class="mark">b</div><div>BRMMONEY<small>COMMUNITY</small></div></div><span class="pill">Demo customer</span></header>
+<div class="notice"><span>BRMMONEY COMMUNITY WALLET</span><span>Square-hosted checkout · Credits after confirmed payment</span></div>
+<header><div class="brand"><div class="mark">b</div><div>BRMMONEY<small>COMMUNITY</small></div></div><span class="pill">Member wallet</span></header>
 <nav aria-label="Main navigation">
 <button class="active" data-tab="wallet">My wallet</button><button data-tab="market">Marketplace</button><button data-tab="transactions">Transactions</button><button data-tab="community">Community</button>
 <button data-tab="member">Member Sign In</button>
@@ -43,17 +44,28 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 </nav>
 <main>
 <section id="wallet" class="panel active">
-<div class="hero"><div><div class="eyebrow">YOUR COMMUNITY. YOUR CREDITS.</div><h1>A little credit.<br>A world of possibility.</h1><p>Buy BRM credits. Discover eligible products. Keep every transaction in one place.</p><button class="btn" onclick="showTab('market')">Try buying credits →</button></div>
-<div class="wallet"><div><div class="eyebrow">DEMO WALLET</div><div class="balance" id="balance">750 <span>BRM</span></div><p id="dollar">$7.50 toward eligible products</p></div><p class="muted">Not transferable · No cash exchange, except as required by law</p></div></div>
-<div class="grid"><div class="card"><div class="eyebrow">ONE SIMPLE PACKAGE</div><h2>$5.00 USD = 500 BRM</h2><p class="muted">Proposed redemption value: 1 BRM = $0.01 USD. Credits are issued only after a successful payment is confirmed.</p><div class="steps"><div>01 / Purchase<small>Square checkout in a future live version.</small></div><div>02 / Confirm<small>Verified payment, issued once.</small></div><div>03 / Redeem<small>Eligible marketplace products only.</small></div></div></div>
-<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Latest activity</h2><button class="btn secondary" onclick="showTab('transactions')">View all</button></div><div class="activity"><span>Example opening balance<br><small class="muted">Illustrative</small></span><b>+750 BRM</b></div></div></div>
+<div class="hero"><div><div class="eyebrow">YOUR COMMUNITY. YOUR CREDITS.</div><h1>A little credit.<br>A world of possibility.</h1><p>Buy BRM credits. Discover eligible products. Keep every transaction in one place.</p><button class="btn" onclick="showTab('market')">Buy BRM credits →</button></div>
+<div class="wallet"><div><div class="eyebrow">YOUR BRM WALLET</div><div class="balance" id="balance">0 <span>BRM</span></div><p id="dollar">$0.00 toward eligible products</p></div><p class="muted">Not transferable · No cash exchange, except as required by law</p></div></div>
+<div class="grid"><div class="card"><div class="eyebrow">ONE SIMPLE PACKAGE</div><h2>$5.00 USD = 500 BRM</h2><p class="muted">Proposed redemption value: 1 BRM = $0.01 USD. Credits are issued only after a successful payment is confirmed.</p><div class="steps"><div>01 / Purchase<small>Secure Square-hosted checkout.</small></div><div>02 / Confirm<small>Verified payment, issued once.</small></div><div>03 / Redeem<small>Eligible marketplace products only.</small></div></div></div>
+<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Latest activity</h2><button class="btn secondary" onclick="showTab('transactions')">View all</button></div><p class="muted">Your recent wallet activity will appear here after you sign in.</p></div></div>
 </section>
-<section id="market" class="panel"><div class="card"><div class="eyebrow">BRMMONEY MARKETPLACE</div><h1>Shop with BRM.</h1><p class="muted">Live Square products approved for BRM redemption. Prices shown here come from your private synced catalog.</p>
-<button class="btn secondary" id="loadMarketplaceButton" type="button">Refresh approved products</button>
+<section id="market" class="panel"><div class="card"><div class="eyebrow">BRMMONEY MARKETPLACE</div><h1>Shop with BRM.</h1><p class="muted">Live approved products from your Square catalog. BRM credits are reserved during checkout and deducted only after Square confirms payment.</p>
+<button class="btn secondary" id="loadMarketplaceButton" type="button">Load approved products</button>
 <p id="marketplaceStatus" class="muted" aria-live="polite">Sign in to view approved products.</p>
-<div id="selectedProductPanel" class="card" style="display:none;margin-top:18px;border:2px solid var(--green)" aria-live="polite"></div>
-<div id="marketplaceProducts"></div>
-<p class="muted">Checkout is not open yet. Shipping and tax must be calculated from a verified provider before any member payment link can be created. No credits are deducted on this page.</p></div>
+<div id="marketplaceProducts"></div></div>
+<div class="card" id="marketplaceAddressCard" style="margin-top:20px" hidden>
+<h2>Shipping address</h2><p class="muted" id="selectedMarketplaceProduct">Choose a product first.</p>
+<label for="shipLine1">Street address</label><input id="shipLine1" autocomplete="address-line1" maxlength="200" placeholder="Street address">
+<label for="shipLine2">Apartment, suite, etc. (optional)</label><input id="shipLine2" autocomplete="address-line2" maxlength="200" placeholder="Apartment or unit">
+<label for="shipCity">City</label><input id="shipCity" autocomplete="address-level2" maxlength="100" placeholder="City">
+<label for="shipState">State</label><input id="shipState" autocomplete="address-level1" maxlength="100" placeholder="State">
+<label for="shipZip">ZIP code</label><input id="shipZip" autocomplete="postal-code" maxlength="20" placeholder="ZIP code">
+<label for="shipCountry">Country</label><select id="shipCountry"><option value="US" selected>United States</option></select>
+<button class="btn secondary" id="runMarketplacePreflightButton" type="button">Run no-charge checkout check</button>
+<p id="marketplacePreflightMessage" class="muted" aria-live="polite">Safe check only: estimates TaxJar tax and the card balance. It does not reserve BRM credits, create a Square link, or charge a card.</p>
+<button class="btn" id="startMarketplaceCheckoutButton" type="button">Calculate tax and continue to Square</button>
+<p id="marketplaceCheckoutMessage" class="muted" aria-live="polite">Live checkout is a separate action. Tax is calculated on the full Square product price before BRM credits. $6 U.S. shipping applies.</p>
+</div>
 <div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 500 BRM</p><button class="btn" id="marketBuyCreditsButton" onclick="startBRMCheckout()">Buy 500 BRM for $5.00</button><p id="checkoutStatus" class="muted" aria-live="polite">Sign in to purchase BRM credits.</p></div></section>
 <section id="transactions" class="panel">
   <div class="card">
@@ -171,6 +183,13 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     <p id="squareProductsStatus" class="muted" aria-live="polite">Catalog imported. Load the products when you are ready to review them.</p>
     <div id="squareProductsList"></div>
 
+    <h2>Expired marketplace checkout cleanup</h2>
+    <p class="muted">Check expired Square checkout links. The first check is a dry run and does not change anything. If Square shows an active or unverified payment, that reservation is skipped.</p>
+    <button class="btn secondary" id="previewExpiredCheckoutCleanupButton" type="button">Preview expired checkouts</button>
+    <button class="btn" id="applyExpiredCheckoutCleanupButton" type="button" disabled>Cancel abandoned checkouts and release credits</button>
+    <p id="expiredCheckoutCleanupStatus" class="muted" aria-live="polite">Run a preview before applying cleanup.</p>
+    <div id="expiredCheckoutCleanupResults"></div>
+
     <h2>Split-checkout shipping and tax review</h2>
     <p class="muted">Review member checkout reservations. U.S. shipping is a fixed $6.00 flat fee. Enter only the separately verified tax amount. Saving a quote does not start payment.</p>
     <button class="btn secondary" id="loadCheckoutReservationsButton" type="button">Load checkout reservations</button>
@@ -206,7 +225,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
   </div>
 </section>
 </main>
-<footer><b>BRMMONEY Community · Concept preview</b><br>All demo data stays in memory and resets on reload. No payment credentials, real customer data, live wallet, or deployed backend. BRM credits are not publicly traded cryptocurrency or an investment. Transfers and cash-out are not offered; applicable legal exceptions require review.<br><br>Proposed rules, not a final legal policy. Expiration is unset and disabled. Refund and chargeback events go to review; automatic reversals are disabled.</footer>
+<footer><b>BRMMONEY Community</b><br>BRM credits are issued only after Square confirms a successful $5.00 USD payment. Each confirmed package adds 500 BRM. Credits are for eligible marketplace products only; transfers and cash-out are not offered, subject to applicable law. Marketplace listings are sourced from your approved Square catalog; community activity figures are preview content. BRM credits are not publicly traded cryptocurrency or an investment.<br><br>Proposed rules, not a final legal policy. Expiration is unset and disabled. Refund and chargeback events go to review; automatic reversals are disabled.</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // BRMMONEY Community — Supabase connection
@@ -279,8 +298,185 @@ function drawCommunityChart() {
 }
 
 drawCommunityChart();
-function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==="market")loadMarketplaceProducts();window.scrollTo({top:0,behavior:'smooth'})}
-document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+// LIVE BRMMONEY MARKETPLACE AND MEMBER SPLIT CHECKOUT
+let selectedMarketplaceProduct = null;
+const marketplaceProducts = document.getElementById("marketplaceProducts");
+const marketplaceStatus = document.getElementById("marketplaceStatus");
+const marketplaceAddressCard = document.getElementById("marketplaceAddressCard");
+const marketplaceCheckoutMessage = document.getElementById("marketplaceCheckoutMessage");
+
+async function loadMarketplaceProducts() {
+  const button = document.getElementById("loadMarketplaceButton");
+  button.disabled = true;
+  marketplaceStatus.textContent = "Loading approved Square products...";
+  marketplaceProducts.replaceChildren();
+  try {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !sessionData.session) throw new Error("Please sign in to view approved products.");
+    const { data, error } = await supabaseClient.functions.invoke("list-brm-marketplace", {
+      method: "GET",
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
+    if (error) throw error;
+    if (!data?.success || !Array.isArray(data.products)) throw new Error(data?.error || "Marketplace could not be loaded.");
+    if (!data.products.length) {
+      marketplaceStatus.textContent = "No approved products are available yet.";
+      return;
+    }
+    marketplaceStatus.textContent = data.products.length + " approved Square product variations available.";
+    data.products.forEach(product => {
+      const card = document.createElement("div");
+      card.className = "product";
+      const info = document.createElement("div");
+      const title = document.createElement("h3");
+      title.textContent = product.item_name +
+        (product.variation_name ? " · " + product.variation_name : "") +
+        (product.sku ? " · SKU " + product.sku : "");
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = "Approved for BRM redemption";
+      const price = document.createElement("p");
+      price.className = "muted";
+      const productBalanceCents = Math.max(0, product.price_cents - product.brm_price);
+      price.textContent = "Square price: $" + (product.price_cents / 100).toFixed(2) +
+        " · BRM credits applied: " + Number(product.brm_price).toLocaleString() +
+        " BRM ($" + (Number(product.brm_price) / 100).toFixed(2) + ")" +
+        (productBalanceCents === 0
+          ? " · Product price fully covered by BRM credits; card payment is shipping + applicable tax"
+          : " · Remaining product balance: $" + (productBalanceCents / 100).toFixed(2) + " before shipping and tax");
+      info.append(title, tag, price);
+      const choose = document.createElement("button");
+      choose.className = "btn";
+      choose.type = "button";
+      choose.textContent = "Choose product";
+      choose.addEventListener("click", () => {
+        selectedMarketplaceProduct = product;
+        document.getElementById("selectedMarketplaceProduct").textContent =
+          product.item_name +
+          (product.variation_name ? " · " + product.variation_name : "") +
+          (product.sku ? " · SKU " + product.sku : "") +
+          " · Square price $" + (product.price_cents / 100).toFixed(2) +
+          " · BRM credits applied " + Number(product.brm_price).toLocaleString() +
+          " BRM ($" + (Number(product.brm_price) / 100).toFixed(2) + ")";
+        marketplaceAddressCard.hidden = false;
+        marketplaceCheckoutMessage.textContent = "Enter your U.S. shipping address. Tax will be calculated on the full Square price before BRM credits.";
+        marketplaceAddressCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      card.append(info, choose);
+      marketplaceProducts.appendChild(card);
+    });
+  } catch (error) {
+    marketplaceStatus.textContent = error?.message || "Could not load marketplace.";
+  } finally {
+    button.disabled = false;
+  }
+}
+document.getElementById("loadMarketplaceButton").addEventListener("click", loadMarketplaceProducts);
+
+document.getElementById("runMarketplacePreflightButton").addEventListener("click", async () => {
+  const button = document.getElementById("runMarketplacePreflightButton");
+  const status = document.getElementById("marketplacePreflightMessage");
+  if (!selectedMarketplaceProduct) {
+    status.textContent = "Choose an approved product first.";
+    return;
+  }
+  const address = {
+    address_line1: document.getElementById("shipLine1").value.trim(),
+    address_line2: document.getElementById("shipLine2").value.trim(),
+    city: document.getElementById("shipCity").value.trim(),
+    state_region: document.getElementById("shipState").value.trim(),
+    postal_code: document.getElementById("shipZip").value.trim(),
+    country_code: document.getElementById("shipCountry").value
+  };
+  if (!address.address_line1 || !address.city || !address.state_region || !address.postal_code) {
+    status.textContent = "Enter your street, city, state, and ZIP code to run the safe check.";
+    return;
+  }
+  button.disabled = true;
+  status.textContent = "Running safe TaxJar estimate. No credits are being reserved and no payment link will be created...";
+  try {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !sessionData.session) throw new Error("Please sign in to run the preflight check.");
+    const { data, error } = await supabaseClient.functions.invoke("member-brm-marketplace-preflight", {
+      body: { product_id: selectedMarketplaceProduct.id, ...address },
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
+    if (error) throw error;
+    if (!data?.success || data.preflight_only !== true || data.square_payment_link_created !== false)
+      throw new Error(data?.error || "Preflight check did not return a safe result.");
+    const productCovered = Number(data.card_product_balance_cents) === 0;
+    status.textContent =
+      "NO-CHARGE CHECK PASSED — Product: $" + (data.product_price_cents / 100).toFixed(2) +
+      " · BRM value: $" + (data.brm_value_cents / 100).toFixed(2) +
+      (productCovered
+        ? " · Product fully covered by BRM credits"
+        : " · Remaining product balance: $" + (data.card_product_balance_cents / 100).toFixed(2)) +
+      " · Shipping: $" + (data.shipping_cents / 100).toFixed(2) +
+      " · Estimated tax: $" + (data.tax_cents / 100).toFixed(2) +
+      " · Estimated card total: $" + (data.total_estimated_card_due_cents / 100).toFixed(2) +
+      (productCovered
+        ? ". Card payment is for shipping and applicable tax only."
+        : ". Card payment includes the remaining product balance, shipping, and applicable tax.") +
+      " No BRM credits reserved, no Square link created, no TaxJar transaction recorded, and no payment taken.";
+  } catch (error) {
+    status.textContent = error?.message || "Preflight could not complete. No checkout or payment was created.";
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.getElementById("startMarketplaceCheckoutButton").addEventListener("click", async () => {
+  const button = document.getElementById("startMarketplaceCheckoutButton");
+  if (!selectedMarketplaceProduct) {
+    marketplaceCheckoutMessage.textContent = "Choose a product first.";
+    return;
+  }
+  const address = {
+    address_line1: document.getElementById("shipLine1").value.trim(),
+    address_line2: document.getElementById("shipLine2").value.trim(),
+    city: document.getElementById("shipCity").value.trim(),
+    state_region: document.getElementById("shipState").value.trim(),
+    postal_code: document.getElementById("shipZip").value.trim(),
+    country_code: document.getElementById("shipCountry").value
+  };
+  if (!address.address_line1 || !address.city || !address.state_region || !address.postal_code) {
+    marketplaceCheckoutMessage.textContent = "Complete your street, city, state, and ZIP code.";
+    return;
+  }
+  button.disabled = true;
+  marketplaceCheckoutMessage.textContent = "Reserving BRM credits and calculating destination tax...";
+  try {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !sessionData.session) throw new Error("Please sign in before checkout.");
+    const { data, error } = await supabaseClient.functions.invoke("member-brm-marketplace-checkout", {
+      body: {
+        product_id: selectedMarketplaceProduct.id,
+        idempotency_key: "member-market-" + crypto.randomUUID(),
+        ...address
+      },
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
+    if (error) throw error;
+    if (!data?.success || !data.checkout_url || !data.checkout_url.startsWith("https://"))
+      throw new Error(data?.error || "Secure Square checkout was not created.");
+    marketplaceCheckoutMessage.textContent =
+      (data.product_fully_covered_by_brm
+        ? "BRM credits cover the full product price. "
+        : "Remaining product balance: $" + (data.card_due_cents / 100).toFixed(2) + ". ") +
+      "Tax: $" + (data.tax_cents / 100).toFixed(2) +
+      " · Shipping: $" + (data.shipping_cents / 100).toFixed(2) +
+      " · Card payment: $" + (data.total_card_due_cents / 100).toFixed(2) +
+      (data.product_fully_covered_by_brm
+        ? ". Card payment is shipping and applicable tax only."
+        : ". Card payment includes the remaining product balance, shipping, and applicable tax.") +
+      " Opening Square. Your BRM credits are reserved and will only be deducted after confirmed payment.";
+    window.location.assign(data.checkout_url);
+  } catch (error) {
+    marketplaceCheckoutMessage.textContent = error?.message || "Checkout could not be started. No payment was taken.";
+    button.disabled = false;
+  }
+});
+
 async function startBRMCheckout() {
   const button = document.getElementById("marketBuyCreditsButton");
   const status = document.getElementById("checkoutStatus");
@@ -318,133 +514,8 @@ async function startBRMCheckout() {
     button.disabled = false;
   }
 }
-// MEMBER MARKETPLACE — READ-ONLY LIVE APPROVED SQUARE PRODUCTS
-const marketplaceStatus = document.getElementById("marketplaceStatus");
-const marketplaceProducts = document.getElementById("marketplaceProducts");
-const loadMarketplaceButton = document.getElementById("loadMarketplaceButton");
-
-async function loadMarketplaceProducts() {
-  if (!marketplaceStatus || !marketplaceProducts) return;
-  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-  if (sessionError || !sessionData.session) {
-    marketplaceStatus.textContent = "Please sign in to view approved products.";
-    marketplaceProducts.replaceChildren();
-    return;
-  }
-  if (loadMarketplaceButton) loadMarketplaceButton.disabled = true;
-  marketplaceStatus.textContent = "Loading approved Square products...";
-  marketplaceProducts.replaceChildren();
-  try {
-    const { data, error } = await supabaseClient.functions.invoke("list-brm-marketplace", {
-      method: "GET",
-      headers: { Authorization: "Bearer " + sessionData.session.access_token }
-    });
-    if (error) throw error;
-    if (!data?.success) throw new Error(data?.error || "Marketplace could not be loaded.");
-    const products = data.products || [];
-    marketplaceStatus.textContent = products.length + " approved product variation(s) available.";
-    if (!products.length) {
-      marketplaceProducts.textContent = "No products are currently approved for BRM redemption.";
-      return;
-    }
-    products.forEach((product) => {
-      const card = document.createElement("div");
-      card.className = "product";
-      const details = document.createElement("div");
-      details.style.flex = "1";
-      details.style.minWidth = "0";
-      if (product.image_url) {
-        const image = document.createElement("img");
-        image.src = product.image_url;
-        image.alt = "";
-        image.loading = "lazy";
-        image.style.width = "76px";
-        image.style.height = "76px";
-        image.style.objectFit = "cover";
-        image.style.borderRadius = "10px";
-        image.style.float = "left";
-        image.style.marginRight = "12px";
-        details.appendChild(image);
-      }
-      const name = document.createElement("h3");
-      name.textContent = product.item_name || "Square product";
-      const variation = document.createElement("p");
-      variation.className = "muted";
-      variation.textContent = product.variation_name || "Default variation";
-      const prices = document.createElement("p");
-      prices.className = "muted";
-      const squarePrice = Number(product.price_cents) / 100;
-      const brmDiscount = Number(product.brm_price) / 100;
-      const remaining = squarePrice - brmDiscount;
-      prices.textContent = "Square price " + moneyFromCents(product.price_cents) +
-        " · BRM discount " + Number(product.brm_price).toLocaleString() + " BRM (" +
-        moneyFromCents(product.brm_price) + ") · Card subtotal " + moneyFromCents(Math.round(remaining * 100)) +
-        " before shipping and tax";
-      const tag = document.createElement("span");
-      tag.className = "tag";
-      tag.textContent = "Owner approved for BRM";
-      details.append(name, variation, prices, tag);
-      const selectButton = document.createElement("button");
-      selectButton.type = "button";
-      selectButton.className = "product-select";
-      selectButton.textContent = "Select product";
-      selectButton.setAttribute("aria-label", "View BRM redemption details for " + (product.item_name || "Square product"));
-      selectButton.addEventListener("click", () => showSelectedMarketplaceProduct(product));
-      card.append(details, selectButton);
-      marketplaceProducts.appendChild(card);
-    });
-  } catch (error) {
-    marketplaceStatus.textContent = error?.message || "Could not load approved products.";
-  } finally {
-    if (loadMarketplaceButton) loadMarketplaceButton.disabled = false;
-  }
-}
-if (loadMarketplaceButton) loadMarketplaceButton.addEventListener("click", loadMarketplaceProducts);
-const selectedProductPanel = document.getElementById("selectedProductPanel");
-function showSelectedMarketplaceProduct(product) {
-  if (!selectedProductPanel) return;
-  selectedProductPanel.replaceChildren();
-  const heading = document.createElement("h2");
-  heading.textContent = "Selected product";
-  const name = document.createElement("h3");
-  name.textContent = product.item_name || "Square product";
-  const variation = document.createElement("p");
-  variation.className = "muted";
-  variation.textContent = product.variation_name || "Default variation";
-  const squareCents = Number(product.price_cents);
-  const brmCredits = Number(product.brm_price);
-  const cardCents = squareCents - brmCredits;
-  const rows = [
-    ["Square item price", moneyFromCents(squareCents)],
-    ["BRM credits to redeem", brmCredits.toLocaleString() + " BRM"],
-    ["Remaining card subtotal", moneyFromCents(cardCents)],
-    ["Planned U.S. flat shipping fee", moneyFromCents(600)]
-  ];
-  rows.forEach(([labelText, valueText]) => {
-    const row = document.createElement("div");
-    row.className = "activity";
-    const label = document.createElement("span");
-    label.textContent = labelText;
-    const value = document.createElement("b");
-    value.textContent = valueText;
-    row.append(label, value);
-    selectedProductPanel.appendChild(row);
-  });
-  const note = document.createElement("p");
-  note.className = "muted";
-  note.textContent = "The planned U.S. flat shipping fee is $6.00. It is shown for planning only and is not yet included in a payable total. Applicable tax is not yet calculated. Checkout is not available, so no BRM credits have been reserved or deducted and no card payment will be taken.";
-  const close = document.createElement("button");
-  close.type = "button";
-  close.className = "btn secondary";
-  close.textContent = "Close details";
-  close.addEventListener("click", () => { selectedProductPanel.style.display = "none"; });
-  selectedProductPanel.prepend(heading, name, variation);
-  selectedProductPanel.append(note, close);
-  selectedProductPanel.style.display = "block";
-  selectedProductPanel.scrollIntoView({behavior:"smooth", block:"nearest"});
-}
-
-
+function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='market')loadMarketplaceProducts();window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 // BRMMONEY MEMBER ACCOUNT FUNCTIONS
 
 const memberEmail = document.getElementById("memberEmail");
@@ -545,9 +616,13 @@ async function updateMemberStatus(user) {
       "$" + (balance / 100).toFixed(2) + " toward eligible products";
 
     memberMessage.textContent = "Your wallet is connected!";
+    const checkoutStatus = document.getElementById("checkoutStatus");
+    if (checkoutStatus) checkoutStatus.textContent = "Signed in. You can start secure Square checkout when ready.";
 await loadMemberTransactions(user);
 
   } else {
+    const checkoutStatus = document.getElementById("checkoutStatus");
+    if (checkoutStatus) checkoutStatus.textContent = "Sign in to purchase BRM credits.";
     document.getElementById("ownerTab").hidden = true;
     memberStatus.textContent = "You are not signed in.";
     signOutButton.hidden = true;
@@ -617,7 +692,7 @@ document.getElementById("memberForgotPassword").addEventListener("click", async 
   memberMessage.textContent = "Sending password reset email...";
 
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://brandingrealmoments-hub.github.io/brm-community/"
+    redirectTo: "https://mccurtyd400-max.github.io/brm-community/"
   });
 
   if (error) {
@@ -655,9 +730,19 @@ const newMemberPassword = document.getElementById("newMemberPassword");
 supabaseClient.auth.onAuthStateChange((event, session) => {
   if (event === "PASSWORD_RECOVERY" && session) {
     passwordResetForm.hidden = false;
+    showTab("member");
     memberMessage.textContent = "Enter your new password below.";
   }
 });
+
+// Show the password form immediately when a recovery link lands on this site.
+const recoveryHash = new URLSearchParams(window.location.hash.slice(1));
+const recoveryQuery = new URLSearchParams(window.location.search);
+if (recoveryHash.get("type") === "recovery" || recoveryQuery.get("type") === "recovery") {
+  passwordResetForm.hidden = false;
+  showTab("member");
+  memberMessage.textContent = "Recovery link detected. Enter your new password below.";
+}
 
 document.getElementById("saveNewPassword").addEventListener("click", async () => {
   const newPassword = newMemberPassword.value;
@@ -853,6 +938,73 @@ async function loadSquareProducts() {
 }
 loadSquareProductsButton.addEventListener("click", loadSquareProducts);
 
+// OWNER-ONLY EXPIRED MARKETPLACE CHECKOUT CLEANUP
+let expiredCheckoutPreviewReady = false;
+let expiredCheckoutPreviewResults = [];
+const cleanupPreviewButton = document.getElementById("previewExpiredCheckoutCleanupButton");
+const cleanupApplyButton = document.getElementById("applyExpiredCheckoutCleanupButton");
+const cleanupStatus = document.getElementById("expiredCheckoutCleanupStatus");
+const cleanupResults = document.getElementById("expiredCheckoutCleanupResults");
+
+async function runExpiredCheckoutCleanup(apply) {
+  const button = apply ? cleanupApplyButton : cleanupPreviewButton;
+  button.disabled = true;
+  cleanupApplyButton.disabled = true;
+  cleanupStatus.textContent = apply
+    ? "Checking Square payment status and safely cleaning expired checkouts..."
+    : "Checking expired reservations and Square payment status (no changes will be made)...";
+  cleanupResults.replaceChildren();
+  try {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !sessionData.session) throw new Error("Please sign in with your owner account.");
+    const { data, error } = await supabaseClient.functions.invoke("owner-cleanup-expired-brm-checkouts", {
+      body: { apply, limit: 10 },
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
+    if (error) throw error;
+    if (!data?.success || !Array.isArray(data.results)) throw new Error(data?.error || "Cleanup request failed.");
+    expiredCheckoutPreviewReady = !apply;
+    expiredCheckoutPreviewResults = data.results;
+    const counts = {};
+    data.results.forEach(item => counts[item.action] = (counts[item.action] || 0) + 1);
+    cleanupStatus.textContent = (apply ? "Cleanup finished. " : "Preview finished. No changes were made. ") +
+      data.scanned + " expired checkout(s) checked. " +
+      (counts.would_cancel_expired_link || 0) + " eligible to cancel; " +
+      (counts.skipped_payment_exists || 0) + " with an active payment skipped; " +
+      (counts.skipped_payment_status_unverified || 0) + " with unverified payment status skipped.";
+    data.results.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "activity";
+      const detail = document.createElement("span");
+      detail.textContent = (item.product_name || "Marketplace checkout") + " · " + item.action.replaceAll("_", " ");
+      const credits = document.createElement("b");
+      credits.textContent = Number(item.brm_credits || 0).toLocaleString() + " BRM";
+      row.append(detail, credits);
+      cleanupResults.appendChild(row);
+    });
+    if (!data.results.length) {
+      cleanupResults.textContent = "No expired checkout links need cleanup right now.";
+    }
+    cleanupApplyButton.disabled = apply || !data.results.some(item => item.action === "would_cancel_expired_link");
+  } catch (error) {
+    expiredCheckoutPreviewReady = false;
+    cleanupStatus.textContent = error?.message || "Could not run expired checkout cleanup.";
+    cleanupApplyButton.disabled = true;
+  } finally {
+    button.disabled = false;
+  }
+}
+cleanupPreviewButton.addEventListener("click", () => runExpiredCheckoutCleanup(false));
+cleanupApplyButton.addEventListener("click", async () => {
+  if (!expiredCheckoutPreviewReady || !expiredCheckoutPreviewResults.some(item => item.action === "would_cancel_expired_link")) {
+    cleanupStatus.textContent = "Run a fresh preview before applying cleanup.";
+    cleanupApplyButton.disabled = true;
+    return;
+  }
+  if (!window.confirm("Cancel only the expired Square checkout links that passed the payment checks, then release their reserved BRM credits?")) return;
+  await runExpiredCheckoutCleanup(true);
+});
+
 // OWNER-ONLY BRM SPLIT-CHECKOUT SHIPPING AND TAX REVIEW
 const loadCheckoutReservationsButton = document.getElementById("loadCheckoutReservationsButton");
 const checkoutReservationsStatus = document.getElementById("checkoutReservationsStatus");
@@ -976,6 +1128,8 @@ async function loadCheckoutReservations() {
   }
 }
 loadCheckoutReservationsButton.addEventListener("click", loadCheckoutReservations);
+
+
 
 // BRMMONEY OWNER REWARD CONTROLS
 document.getElementById("issueRewardButton").addEventListener("click", async () => {
