@@ -106,7 +106,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     </div>
 
     <h2 style="margin-top:30px">Community growth chart</h2>
-    <p class="muted">Four separate activity lines. Live database connection coming next.</p>
+    <p class="muted">Live community activity from Supabase · Rolling 7-day totals.</p>
 
     <div style="width:100%;overflow-x:auto">
       <canvas id="communityChart" width="850" height="340"
@@ -115,7 +115,7 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     </div>
 
     <p class="muted" id="chartStatus">
-      Preview mode — no live community data connected yet.
+      Sign in to load live community activity.
     </p>
   </div>
 </section>
@@ -241,10 +241,10 @@ const canvas = document.getElementById("communityChart");
 const ctx = canvas.getContext("2d");
 
 const chartLines = [
-  { name: "New Members", color: "#246bce", values: [2, 4, 3, 7, 9, 12, 15] },
-  { name: "Total Credits Earned", color: "#23945b", values: [10, 18, 25, 35, 48, 60, 75] },
-  { name: "Referrals", color: "#e49a27", values: [1, 2, 2, 4, 5, 7, 9] },
-  { name: "Completed Activities", color: "#914acb", values: [3, 5, 8, 10, 14, 18, 22] }
+  { name: "New Members", color: "#246bce", values: [0, 0, 0, 0, 0, 0, 0] },
+  { name: "Total Credits Earned", color: "#23945b", values: [0, 0, 0, 0, 0, 0, 0] },
+  { name: "Referrals", color: "#e49a27", values: [0, 0, 0, 0, 0, 0, 0] },
+  { name: "Completed Activities", color: "#914acb", values: [0, 0, 0, 0, 0, 0, 0] }
 ];
 
 function drawCommunityChart() {
@@ -254,7 +254,8 @@ function drawCommunityChart() {
   const top = 30;
   const width = 750;
   const height = 230;
-  const max = 80;
+  const maxValue = Math.max(0, ...chartLines.flatMap(line => line.values));
+  const max = Math.max(4, Math.ceil(maxValue / 4) * 4);
 
   ctx.font = "12px Arial";
   ctx.fillStyle = "#68766e";
@@ -298,6 +299,70 @@ function drawCommunityChart() {
 }
 
 drawCommunityChart();
+
+async function loadCommunityStats() {
+  const status = document.getElementById("chartStatus");
+  const sessionResult = await supabaseClient.auth.getSession();
+  const session = sessionResult.data?.session;
+
+  if (sessionResult.error || !session) {
+    status.textContent = "Please sign in to view live community activity.";
+    return;
+  }
+
+  status.textContent = "Loading live community activity...";
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("community-stats", {
+      headers: { Authorization: "Bearer " + session.access_token }
+    });
+    if (error) throw error;
+    if (!data || !Array.isArray(data.newMembers) ||
+        !Array.isArray(data.creditsEarned) ||
+        !Array.isArray(data.communityActivity)) {
+      throw new Error(data?.error || "The community stats response was incomplete.");
+    }
+
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const day = new Date();
+      day.setUTCHours(0, 0, 0, 0);
+      day.setUTCDate(day.getUTCDate() - (6 - index));
+      return day.toISOString().slice(0, 10);
+    });
+    const byDay = (rows, field) => {
+      const totals = new Map(rows.map(row => [String(row.activity_date), Number(row[field] || 0)]));
+      return days.map(day => totals.get(day) || 0);
+    };
+
+    const memberValues = byDay(data.newMembers, "new_members");
+    const creditValues = byDay(data.creditsEarned, "total_credits_earned");
+    const referralValues = byDay(data.communityActivity, "completed_referrals");
+    const activityValues = byDay(data.communityActivity, "completed_activities");
+
+    chartLines[0].values = memberValues;
+    chartLines[1].values = creditValues;
+    chartLines[2].values = referralValues;
+    chartLines[3].values = activityValues;
+
+    const sum = values => values.reduce((total, value) => total + value, 0);
+    document.getElementById("chartMembers").textContent = sum(memberValues).toLocaleString();
+    document.getElementById("chartCredits").textContent = sum(creditValues).toLocaleString() + " BRM";
+    document.getElementById("chartReferrals").textContent = sum(referralValues).toLocaleString();
+    document.getElementById("chartActivities").textContent = sum(activityValues).toLocaleString();
+
+    drawCommunityChart();
+    status.textContent = "Live database data · Rolling 7-day totals.";
+  } catch (error) {
+    chartLines.forEach(line => { line.values = [0, 0, 0, 0, 0, 0, 0]; });
+    document.getElementById("chartMembers").textContent = "—";
+    document.getElementById("chartCredits").textContent = "—";
+    document.getElementById("chartReferrals").textContent = "—";
+    document.getElementById("chartActivities").textContent = "—";
+    drawCommunityChart();
+    status.textContent = "Live community data could not be loaded: " +
+      (error?.message || "Please try again after signing in.");
+  }
+}
+
 // LIVE BRMMONEY MARKETPLACE AND MEMBER SPLIT CHECKOUT
 let selectedMarketplaceProduct = null;
 const marketplaceProducts = document.getElementById("marketplaceProducts");
@@ -514,7 +579,7 @@ async function startBRMCheckout() {
     button.disabled = false;
   }
 }
-function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='market')loadMarketplaceProducts();window.scrollTo({top:0,behavior:'smooth'})}
+function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='market')loadMarketplaceProducts();if(id==='community')loadCommunityStats();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 // BRMMONEY MEMBER ACCOUNT FUNCTIONS
 
