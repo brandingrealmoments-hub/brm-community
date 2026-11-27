@@ -1335,6 +1335,63 @@ document.getElementById("createSandboxCheckoutTestButton").addEventListener("cli
     button.disabled = false;
   }
 });
+
+ // Create $5 Sandbox-only test for the 500 BRM credit package
+document.getElementById("createSandboxCreditPurchaseTestButton").addEventListener("click", async () => {
+  const button = document.getElementById("createSandboxCreditPurchaseTestButton");
+  const message = document.getElementById("sandboxCreditPurchaseTestMessage");
+
+  button.disabled = true;
+  message.textContent = "Creating $5 Sandbox credit-purchase test...";
+
+  try {
+    const { data: sessionData, error: sessionError } =
+      await supabaseClient.auth.getSession();
+
+    if (sessionError) throw sessionError;
+
+    if (!sessionData?.session) {
+      message.textContent = "Please sign in to your owner account first.";
+      return;
+    }
+
+    const { data, error } =
+      await supabaseClient.functions.invoke(
+        "brm-square-sandbox-credit-purchase-test",
+        { body: {} }
+      );
+
+    if (error) throw error;
+
+    if (
+      data?.success &&
+      data?.environment === "sandbox" &&
+      data?.checkout_url &&
+      data?.test_credits === 500 &&
+      data?.live_wallet_credits_issued === 0
+    ) {
+      message.textContent =
+        "Sandbox $5 checkout created for 500 test BRM. No live credits issued. ";
+
+      const link = document.createElement("a");
+      link.href = data.checkout_url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Open $5 Sandbox Credit Test";
+
+      message.appendChild(link);
+    } else {
+      message.textContent =
+        data?.error || data?.message || "Sandbox test could not be created.";
+    }
+  } catch (error) {
+    message.textContent =
+      "Test failed: " + (error?.message || "Unknown error");
+  } finally {
+    button.disabled = false;
+  }
+});
+
 // BRMMONEY OWNER REWARD CONTROLS
 document.getElementById("issueRewardButton").addEventListener("click", async () => {
   const button = document.getElementById("issueRewardButton");
