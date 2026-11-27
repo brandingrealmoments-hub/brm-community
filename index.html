@@ -183,6 +183,8 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <p class="muted">Read-only check. This does not create a payment or charge a card.</p>
 <button class="btn" id="squareSandboxCheckButton" type="button">Check Sandbox Connection</button>
 <p id="squareSandboxCheckMessage" class="muted" aria-live="polite">Not checked yet.</p>
+    <button class="btn" id="createSandboxCheckoutTestButton" type="button">Create $1 Sandbox Checkout Test</button>
+<p id="sandboxCheckoutTestMessage" class="muted" aria-live="polite">No test checkout created.</p>
 
     <h2>Square product catalog</h2>
     <p class="muted">Import your Square catalog into a private review list. Imported items stay unavailable for BRM redemption until you approve eligibility and set prices.</p>
@@ -1273,6 +1275,60 @@ document.getElementById("squareSandboxCheckButton").addEventListener("click", as
   } catch (error) {
     message.textContent =
       "Check failed: " + (error?.message || "Unknown error");
+  } finally {
+    button.disabled = false;
+  }
+});
+// Create a fixed $1.00 Sandbox-only test checkout
+document.getElementById("createSandboxCheckoutTestButton").addEventListener("click", async () => {
+  const button = document.getElementById("createSandboxCheckoutTestButton");
+  const message = document.getElementById("sandboxCheckoutTestMessage");
+
+  button.disabled = true;
+  message.textContent = "Creating a Sandbox-only $1 test link...";
+
+  try {
+    const { data: sessionData, error: sessionError } =
+      await supabaseClient.auth.getSession();
+
+    if (sessionError) throw sessionError;
+
+    if (!sessionData?.session) {
+      message.textContent = "Please sign in to your owner account first.";
+      return;
+    }
+
+    const { data, error } =
+      await supabaseClient.functions.invoke(
+        "brm-square-sandbox-checkout-test",
+        { body: {} }
+      );
+
+    if (error) throw error;
+
+    if (
+      data?.success &&
+      data?.environment === "sandbox" &&
+      data?.checkout_url
+    ) {
+      message.textContent =
+        "Sandbox-only $1 checkout link created. BRM credits were not deducted. ";
+
+      const link = document.createElement("a");
+      link.href = data.checkout_url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Open Sandbox test checkout";
+
+      message.appendChild(link);
+    } else {
+      message.textContent =
+        data?.error || data?.message ||
+        "Sandbox checkout test could not be created.";
+    }
+  } catch (error) {
+    message.textContent =
+      "Test failed: " + (error?.message || "Unknown error");
   } finally {
     button.disabled = false;
   }
