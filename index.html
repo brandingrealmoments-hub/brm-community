@@ -1336,13 +1336,13 @@ document.getElementById("createSandboxCheckoutTestButton").addEventListener("cli
   }
 });
 
- // Create $5 Sandbox-only test for the 500 BRM credit package
+ // Create $5 Sandbox-only test for the 50 BRM credit package
 document.getElementById("createSandboxCreditPurchaseTestButton").addEventListener("click", async () => {
   const button = document.getElementById("createSandboxCreditPurchaseTestButton");
   const message = document.getElementById("sandboxCreditPurchaseTestMessage");
 
   button.disabled = true;
-  message.textContent = "Creating $5 Sandbox credit-purchase test...";
+  message.textContent = "Creating $5 Sandbox 50 BRM credit-purchase test...";
 
   try {
     const { data: sessionData, error: sessionError } =
@@ -1367,17 +1367,17 @@ document.getElementById("createSandboxCreditPurchaseTestButton").addEventListene
       data?.success &&
       data?.environment === "sandbox" &&
       data?.checkout_url &&
-      data?.test_credits === 500 &&
+      data?.test_credits === 50 &&
       data?.live_wallet_credits_issued === 0
     ) {
       message.textContent =
-        "Sandbox $5 checkout created for 500 test BRM. No live credits issued. ";
+        "Sandbox $5 checkout created for 50 test BRM. No live credits issued. ";
 
       const link = document.createElement("a");
       link.href = data.checkout_url;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = "Open $5 Sandbox Credit Test";
+      link.textContent = "Open $5 Sandbox 50 BRM Test";
 
       message.appendChild(link);
     } else {
