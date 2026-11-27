@@ -179,6 +179,10 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     <p class="muted">When closed, members cannot load approved items or create a checkout. Opening the marketplace enables checkout for eligible members.</p>
     <button class="btn" id="ownerMarketplaceToggleButton" type="button">Open Marketplace</button>
     <p id="ownerMarketplaceToggleMessage" class="muted" aria-live="polite">Marketplace is closed by default.</p>
+    <h2>Square Sandbox connection check</h2>
+<p class="muted">Read-only check. This does not create a payment or charge a card.</p>
+<button class="btn" id="squareSandboxCheckButton" type="button">Check Sandbox Connection</button>
+<p id="squareSandboxCheckMessage" class="muted" aria-live="polite">Not checked yet.</p>
 
     <h2>Square product catalog</h2>
     <p class="muted">Import your Square catalog into a private review list. Imported items stay unavailable for BRM redemption until you approve eligibility and set prices.</p>
@@ -1236,7 +1240,43 @@ async function loadCheckoutReservations() {
 loadCheckoutReservationsButton.addEventListener("click", loadCheckoutReservations);
 
 
+// Read-only Square Sandbox connection check
+document.getElementById("squareSandboxCheckButton").addEventListener("click", async () => {
+  const button = document.getElementById("squareSandboxCheckButton");
+  const message = document.getElementById("squareSandboxCheckMessage");
 
+  button.disabled = true;
+  message.textContent = "Checking secure Sandbox connection...";
+
+  try {
+    const { data: sessionData, error: sessionError } =
+      await supabaseClient.auth.getSession();
+
+    if (sessionError) throw sessionError;
+
+    if (!sessionData?.session) {
+      message.textContent = "Please sign in to your owner account first.";
+      return;
+    }
+
+    const { data, error } =
+      await supabaseClient.functions.invoke(
+        "brm-square-sandbox-check",
+        { body: {} }
+      );
+
+    if (error) throw error;
+
+    message.textContent = data?.connected === true
+      ? "Square Sandbox connection verified. No payment was created."
+      : data?.message || data?.error || "Sandbox connection not verified.";
+  } catch (error) {
+    message.textContent =
+      "Check failed: " + (error?.message || "Unknown error");
+  } finally {
+    button.disabled = false;
+  }
+});
 // BRMMONEY OWNER REWARD CONTROLS
 document.getElementById("issueRewardButton").addEventListener("click", async () => {
   const button = document.getElementById("issueRewardButton");
