@@ -323,7 +323,9 @@ async function loadMarketplaceProducts() {
       card.className = "product";
       const info = document.createElement("div");
       const title = document.createElement("h3");
-      title.textContent = product.item_name + (product.variation_name ? " · " + product.variation_name : "");
+      title.textContent = product.item_name +
+        (product.variation_name ? " · " + product.variation_name : "") +
+        (product.sku ? " · SKU " + product.sku : "");
       const tag = document.createElement("span");
       tag.className = "tag";
       tag.textContent = "Approved for BRM redemption";
@@ -331,9 +333,10 @@ async function loadMarketplaceProducts() {
       price.className = "muted";
       const productBalanceCents = Math.max(0, product.price_cents - product.brm_price);
       price.textContent = "Square price: $" + (product.price_cents / 100).toFixed(2) +
-        " · BRM: " + Number(product.brm_price).toLocaleString() +
+        " · BRM credits applied: " + Number(product.brm_price).toLocaleString() +
+        " BRM ($" + (Number(product.brm_price) / 100).toFixed(2) + ")" +
         (productBalanceCents === 0
-          ? " · Product fully covered by BRM credits; card payment is shipping + applicable tax"
+          ? " · Product price fully covered by BRM credits; card payment is shipping + applicable tax"
           : " · Remaining product balance: $" + (productBalanceCents / 100).toFixed(2) + " before shipping and tax");
       info.append(title, tag, price);
       const choose = document.createElement("button");
@@ -343,8 +346,12 @@ async function loadMarketplaceProducts() {
       choose.addEventListener("click", () => {
         selectedMarketplaceProduct = product;
         document.getElementById("selectedMarketplaceProduct").textContent =
-          product.item_name + " · $" + (product.price_cents / 100).toFixed(2) +
-          " · " + Number(product.brm_price).toLocaleString() + " BRM credits";
+          product.item_name +
+          (product.variation_name ? " · " + product.variation_name : "") +
+          (product.sku ? " · SKU " + product.sku : "") +
+          " · Square price $" + (product.price_cents / 100).toFixed(2) +
+          " · BRM credits applied " + Number(product.brm_price).toLocaleString() +
+          " BRM ($" + (Number(product.brm_price) / 100).toFixed(2) + ")";
         marketplaceAddressCard.hidden = false;
         marketplaceCheckoutMessage.textContent = "Enter your U.S. shipping address. Tax will be calculated on the full Square price before BRM credits.";
         marketplaceAddressCard.scrollIntoView({ behavior: "smooth", block: "start" });
