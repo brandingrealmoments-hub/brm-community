@@ -969,15 +969,52 @@ async function loadSquareProducts() {
       label.appendChild(priceInput);
       card.appendChild(label);
 
-      const valuePreview = document.createElement("p");
-      valuePreview.className = "muted";
-      valuePreview.style.marginTop = "0";
+      const valuePreview = document.createElement("div");
+      valuePreview.className = "card";
+      valuePreview.style.background = "#f7f9f4";
+      valuePreview.style.padding = "14px";
+      valuePreview.style.marginTop = "10px";
+      valuePreview.style.borderRadius = "12px";
+      const previewHeading = document.createElement("b");
+      previewHeading.textContent = "Redemption preview";
+      const previewSquare = document.createElement("p");
+      previewSquare.className = "muted";
+      const previewDiscount = document.createElement("p");
+      previewDiscount.className = "muted";
+      const previewRemaining = document.createElement("p");
+      previewRemaining.style.fontWeight = "800";
+      const previewNote = document.createElement("p");
+      previewNote.className = "muted";
+      previewNote.style.marginBottom = "0";
       function updateBRMValuePreview() {
         const brmAmount = Number(priceInput.value);
-        valuePreview.textContent = Number.isSafeInteger(brmAmount) && brmAmount > 0
-          ? brmAmount.toLocaleString() + " BRM = $" + (brmAmount / 10).toFixed(2) + " off the Square item price"
-          : "Enter a whole BRM amount to preview its dollar discount.";
+        const hasBRMAmount = Number.isSafeInteger(brmAmount) && brmAmount > 0;
+        const hasSquarePrice = Number.isSafeInteger(Number(product.price_cents)) &&
+          Number(product.price_cents) >= 0 && String(product.currency || "USD").toUpperCase() === "USD";
+        previewSquare.textContent = hasSquarePrice
+          ? "Square item price: " + moneyFromCents(product.price_cents)
+          : "Square item price: unavailable or not in USD";
+        if (!hasBRMAmount) {
+          previewDiscount.textContent = "BRM discount: enter a whole BRM amount";
+          previewRemaining.textContent = "Remaining item price: —";
+          previewNote.textContent = "1 BRM = $0.10. The preview updates as you type.";
+        } else {
+          const discountCents = brmAmount * 10;
+          previewDiscount.textContent = "BRM discount: " + brmAmount.toLocaleString() +
+            " BRM = " + moneyFromCents(discountCents);
+          if (hasSquarePrice) {
+            const remainingCents = Number(product.price_cents) - discountCents;
+            previewRemaining.textContent = "Remaining item price: " + moneyFromCents(Math.max(0, remainingCents));
+            previewNote.textContent = remainingCents < 0
+              ? "The BRM discount is greater than the Square item price. Lower the BRM amount before approving."
+              : "Estimate for the item price only. Shipping and tax are separate.";
+          } else {
+            previewRemaining.textContent = "Remaining item price: unavailable";
+            previewNote.textContent = "A USD Square item price is needed to calculate the remaining amount.";
+          }
+        }
       }
+      valuePreview.append(previewHeading, previewSquare, previewDiscount, previewRemaining, previewNote);
       priceInput.addEventListener("input", updateBRMValuePreview);
       updateBRMValuePreview();
       card.appendChild(valuePreview);
