@@ -1034,16 +1034,16 @@ async function loadSquareProducts() {
   } finally {
     loadSquareProductsButton.disabled = false;
   }
-  const searchInput = document.getElementById("squareProductSearch");
-  if (searchInput) {
-    searchInput.addEventListener("input", () => {
-      const term = searchInput.value.trim().toLowerCase();
-      squareProductsList.querySelectorAll(".card").forEach(card => {
-        card.hidden = term !== "" && !card.dataset.search.includes(term);
-      });
-    });
-  }
+  filterSquareProducts();
 }
+function filterSquareProducts() {
+  const searchInput = document.getElementById("squareProductSearch");
+  const term = searchInput ? searchInput.value.trim().toLowerCase() : "";
+  squareProductsList.querySelectorAll(".card").forEach(card => {
+    card.hidden = term !== "" && !card.dataset.search.includes(term);
+  });
+}
+document.getElementById("squareProductSearch").addEventListener("input", filterSquareProducts);
 loadSquareProductsButton.addEventListener("click", loadSquareProducts);
 
 // OWNER-ONLY EXPIRED MARKETPLACE CHECKOUT CLEANUP
