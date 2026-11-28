@@ -989,7 +989,8 @@ async function loadSquareProducts() {
       function updateBRMValuePreview() {
         const brmAmount = Number(priceInput.value);
         const hasBRMAmount = Number.isSafeInteger(brmAmount) && brmAmount > 0;
-        const hasSquarePrice = Number.isSafeInteger(Number(product.price_cents)) &&
+        const hasSquarePrice = product.price_cents !== null && product.price_cents !== undefined &&
+          product.price_cents !== "" && Number.isSafeInteger(Number(product.price_cents)) &&
           Number(product.price_cents) >= 0 && String(product.currency || "USD").toUpperCase() === "USD";
         previewSquare.textContent = hasSquarePrice
           ? "Square item price: " + moneyFromCents(product.price_cents)
