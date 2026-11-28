@@ -63,8 +63,8 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <label for="shipCountry">Country</label><select id="shipCountry"><option value="US" selected>United States</option></select>
 <button class="btn secondary" id="runMarketplacePreflightButton" type="button">Run no-charge checkout check</button>
 <p id="marketplacePreflightMessage" class="muted" aria-live="polite">Safe check only: estimates TaxJar tax and the card balance. It does not reserve BRM credits, create a Square link, or charge a card.</p>
-<button class="btn" id="startMarketplaceCheckoutButton" type="button" disabled>Live checkout currently disabled</button>
-<p id="marketplaceCheckoutMessage" class="muted" aria-live="polite">Live Square checkout is temporarily disabled while final checks are completed. You can still run the no-charge checkout check above to review the product balance, $6 U.S. shipping, and estimated tax. No BRM credits are reserved and no card is charged during that check.</p>
+<button class="btn" id="startMarketplaceCheckoutButton" type="button" disabled>Continue to secure Square checkout</button>
+<p id="marketplaceCheckoutMessage" class="muted" aria-live="polite">Run the no-charge checkout check first. The marketplace owner setting must also be open before a Square payment link can be created. BRM credits are only deducted after Square confirms payment.</p>
 </div>
 <div class="card" style="margin-top:20px"><h2>One simple package</h2><p>$5.00 USD = 50 BRM</p><button class="btn" id="marketBuyCreditsButton" onclick="startBRMCheckout()">Buy 50 BRM for $5.00</button><p id="checkoutStatus" class="muted" aria-live="polite">Sign in to purchase BRM credits.</p></div></section>
 <section id="transactions" class="panel">
@@ -383,6 +383,7 @@ async function loadCommunityStats() {
 
 // LIVE BRMMONEY MARKETPLACE AND MEMBER SPLIT CHECKOUT
 let selectedMarketplaceProduct = null;
+let marketplacePreflightPassed = false;
 const marketplaceProducts = document.getElementById("marketplaceProducts");
 const marketplaceStatus = document.getElementById("marketplaceStatus");
 const marketplaceAddressCard = document.getElementById("marketplaceAddressCard");
@@ -434,6 +435,9 @@ async function loadMarketplaceProducts() {
       choose.textContent = "Choose product";
       choose.addEventListener("click", () => {
         selectedMarketplaceProduct = product;
+        marketplacePreflightPassed = false;
+        document.getElementById("startMarketplaceCheckoutButton").disabled = true;
+        document.getElementById("marketplacePreflightMessage").textContent = "Run the no-charge checkout check for this product and shipping address before continuing.";
         document.getElementById("selectedMarketplaceProduct").textContent =
           product.item_name +
           (product.variation_name ? " · " + product.variation_name : "") +
@@ -455,6 +459,17 @@ async function loadMarketplaceProducts() {
   }
 }
 document.getElementById("loadMarketplaceButton").addEventListener("click", loadMarketplaceProducts);
+
+for (const fieldId of ["shipLine1", "shipLine2", "shipCity", "shipState", "shipZip", "shipCountry"]) {
+  document.getElementById(fieldId).addEventListener("input", () => {
+    marketplacePreflightPassed = false;
+    document.getElementById("startMarketplaceCheckoutButton").disabled = true;
+  });
+  document.getElementById(fieldId).addEventListener("change", () => {
+    marketplacePreflightPassed = false;
+    document.getElementById("startMarketplaceCheckoutButton").disabled = true;
+  });
+}
 
 document.getElementById("runMarketplacePreflightButton").addEventListener("click", async () => {
   const button = document.getElementById("runMarketplacePreflightButton");
@@ -488,6 +503,8 @@ document.getElementById("runMarketplacePreflightButton").addEventListener("click
     if (!data?.success || data.preflight_only !== true || data.square_payment_link_created !== false)
       throw new Error(data?.error || "Preflight check did not return a safe result.");
     const productCovered = Number(data.card_product_balance_cents) === 0;
+    marketplacePreflightPassed = true;
+    document.getElementById("startMarketplaceCheckoutButton").disabled = false;
     status.textContent =
       "NO-CHARGE CHECK PASSED — Product: $" + (data.product_price_cents / 100).toFixed(2) +
       " · BRM value: $" + (data.brm_value_cents / 100).toFixed(2) +
@@ -502,6 +519,8 @@ document.getElementById("runMarketplacePreflightButton").addEventListener("click
         : ". Card payment includes the remaining product balance, shipping, and applicable tax.") +
       " No BRM credits reserved, no Square link created, no TaxJar transaction recorded, and no payment taken.";
   } catch (error) {
+    marketplacePreflightPassed = false;
+    document.getElementById("startMarketplaceCheckoutButton").disabled = true;
     status.textContent = error?.message || "Preflight could not complete. No checkout or payment was created.";
   } finally {
     button.disabled = false;
@@ -510,6 +529,11 @@ document.getElementById("runMarketplacePreflightButton").addEventListener("click
 
 document.getElementById("startMarketplaceCheckoutButton").addEventListener("click", async () => {
   const button = document.getElementById("startMarketplaceCheckoutButton");
+  if (!marketplacePreflightPassed) {
+    marketplaceCheckoutMessage.textContent = "Run and pass the no-charge checkout check again before starting Square checkout.";
+    button.disabled = true;
+    return;
+  }
   if (!selectedMarketplaceProduct) {
     marketplaceCheckoutMessage.textContent = "Choose a product first.";
     return;
@@ -556,7 +580,8 @@ document.getElementById("startMarketplaceCheckoutButton").addEventListener("clic
     window.location.assign(data.checkout_url);
   } catch (error) {
     marketplaceCheckoutMessage.textContent = error?.message || "Checkout could not be started. No payment was taken.";
-    button.disabled = false;
+    marketplacePreflightPassed = false;
+    button.disabled = true;
   }
 });
 
