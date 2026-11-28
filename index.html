@@ -187,6 +187,17 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
 <p id="sandboxCheckoutTestMessage" class="muted" aria-live="polite">No test checkout created.</p>
 <button class="btn" id="createSandboxCreditPurchaseTestButton" type="button">Create $5 Sandbox Credit Purchase Test</button>
 <p id="sandboxCreditPurchaseTestMessage" class="muted" aria-live="polite">No $5 credit-purchase test created.</p>
+    <h2>BRM product-discount Sandbox test</h2>
+    <p class="muted">Owner-only test. Uses a Sandbox Square payment link and a TaxJar estimate. The BRM amount is simulated only; no live wallet is reserved, credited, or debited. Use a test shipping address, not a customer's address.</p>
+    <button class="btn secondary" id="loadSandboxSplitProductsButton" type="button">Load approved test products</button>
+    <label for="sandboxSplitProduct">Product to test</label>
+    <select id="sandboxSplitProduct"><option value="">Load products first</option></select>
+    <label for="sandboxTestLine1">Test street address</label><input id="sandboxTestLine1" maxlength="200" placeholder="Test address">
+    <label for="sandboxTestCity">Test city</label><input id="sandboxTestCity" maxlength="100" placeholder="City">
+    <label for="sandboxTestState">Test state</label><input id="sandboxTestState" maxlength="2" placeholder="VA">
+    <label for="sandboxTestZip">Test ZIP code</label><input id="sandboxTestZip" maxlength="10" placeholder="ZIP code">
+    <button class="btn" id="createSandboxSplitTestButton" type="button">Create BRM discount Sandbox test</button>
+    <p id="sandboxSplitTestMessage" class="muted" aria-live="polite">No product-discount Sandbox test created.</p>
 
     <h2>Square product catalog</h2>
     <p class="muted">Import your Square catalog into a private review list. Imported items stay unavailable for BRM redemption until you approve eligibility and set prices.</p>
@@ -1480,6 +1491,85 @@ document.getElementById("createSandboxCreditPurchaseTestButton").addEventListene
       "Test failed: " + (error?.message || "Unknown error");
   } finally {
     button.disabled = false;
+  }
+});
+
+// OWNER-ONLY BRM PRODUCT-DISCOUNT SANDBOX TEST
+const loadSandboxSplitProductsButton = document.getElementById("loadSandboxSplitProductsButton");
+const sandboxSplitProduct = document.getElementById("sandboxSplitProduct");
+const createSandboxSplitTestButton = document.getElementById("createSandboxSplitTestButton");
+const sandboxSplitTestMessage = document.getElementById("sandboxSplitTestMessage");
+
+loadSandboxSplitProductsButton.addEventListener("click", async () => {
+  loadSandboxSplitProductsButton.disabled = true;
+  sandboxSplitTestMessage.textContent = "Loading owner-approved test products...";
+  try {
+    const data = await ownerFunction("owner-brm-sandbox-split-checkout-test", { action: "list" });
+    sandboxSplitProduct.replaceChildren();
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Choose a product";
+    sandboxSplitProduct.appendChild(placeholder);
+    (data.products || []).forEach(product => {
+      const option = document.createElement("option");
+      option.value = product.id;
+      option.textContent = product.item_name + " — " + (product.variation_name || "Standard") +
+        " · " + moneyFromCents(product.price_cents) + " · " + product.brm_price + " BRM";
+      sandboxSplitProduct.appendChild(option);
+    });
+    sandboxSplitTestMessage.textContent = (data.products || []).length
+      ? "Loaded " + data.products.length + " approved product(s)."
+      : "No approved products are available to test.";
+  } catch (error) {
+    sandboxSplitTestMessage.textContent = error?.message || "Could not load Sandbox test products.";
+  } finally {
+    loadSandboxSplitProductsButton.disabled = false;
+  }
+});
+
+createSandboxSplitTestButton.addEventListener("click", async () => {
+  const productId = sandboxSplitProduct.value;
+  const address = {
+    product_id: productId,
+    address_line1: document.getElementById("sandboxTestLine1").value.trim(),
+    city: document.getElementById("sandboxTestCity").value.trim(),
+    state_region: document.getElementById("sandboxTestState").value.trim().toUpperCase(),
+    postal_code: document.getElementById("sandboxTestZip").value.trim(),
+    country_code: "US"
+  };
+  if (!productId || !address.address_line1 || !address.city ||
+      !/^[A-Z]{2}$/.test(address.state_region) || !address.postal_code) {
+    sandboxSplitTestMessage.textContent = "Choose a product and enter a complete U.S. test address.";
+    return;
+  }
+  createSandboxSplitTestButton.disabled = true;
+  sandboxSplitTestMessage.textContent = "Calculating the test tax and creating a Sandbox-only checkout...";
+  try {
+    const data = await ownerFunction("owner-brm-sandbox-split-checkout-test", address);
+    if (!data.success || data.environment !== "sandbox" || !data.sandbox_isolated ||
+        !data.checkout_url || data.live_wallet_credits_changed !== false ||
+        data.live_brm_deducted !== false) {
+      throw new Error(data.error || "Sandbox split test was not confirmed.");
+    }
+    sandboxSplitTestMessage.replaceChildren();
+    const summary = document.createElement("span");
+    summary.textContent = data.product_name + " · Product " + moneyFromCents(data.product_price_cents) +
+      " − " + data.test_brm_credits + " test BRM (" + moneyFromCents(data.simulated_brm_value_cents) +
+      ") = " + moneyFromCents(data.remaining_product_cents) +
+      " product balance + " + moneyFromCents(data.shipping_cents) +
+      " shipping + " + moneyFromCents(data.tax_cents) + " estimated tax = " +
+      moneyFromCents(data.total_test_payment_cents) +
+      " Sandbox payment. No live BRM changed. ";
+    const link = document.createElement("a");
+    link.href = data.checkout_url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Open Sandbox split-redemption test";
+    sandboxSplitTestMessage.append(summary, link);
+  } catch (error) {
+    sandboxSplitTestMessage.textContent = error?.message || "Could not create the Sandbox split test.";
+  } finally {
+    createSandboxSplitTestButton.disabled = false;
   }
 });
 
