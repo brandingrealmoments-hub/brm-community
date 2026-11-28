@@ -491,6 +491,8 @@ document.getElementById("runMarketplacePreflightButton").addEventListener("click
     return;
   }
   button.disabled = true;
+  marketplacePreflightPassed = false;
+  document.getElementById("startMarketplaceCheckoutButton").disabled = true;
   status.textContent = "Running safe TaxJar estimate. No credits are being reserved and no payment link will be created...";
   try {
     const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
