@@ -193,9 +193,11 @@ footer{max-width:1072px;margin:0 auto 30px;padding:18px 24px;border-top:1px soli
     <button class="btn" id="syncSquareCatalogButton" type="button">Sync Square Catalog</button>
     <p id="catalogSyncMessage" class="muted" aria-live="polite">Not synced yet.</p>
 
-    <h2>Review Square products</h2>
-    <p class="muted">Review imported Square items. Only products you approve and give a BRM price can be made eligible. Archived items cannot be approved.</p>
+    <h2>Manage products for BRM redemption</h2>
+    <p class="muted">Add products whenever you are ready. Search your Square catalog, enter the BRM amount you want to accept, and approve only that product variation. The conversion is fixed at 1 BRM = $0.10 (10 BRM = $1.00). Nothing is approved until you save it here.</p>
     <button class="btn secondary" id="loadSquareProductsButton" type="button">Load products for review</button>
+    <label for="squareProductSearch">Find a Square product</label>
+    <input id="squareProductSearch" type="search" placeholder="Search product name, variation, or SKU">
     <p id="squareProductsStatus" class="muted" aria-live="polite">Catalog imported. Load the products when you are ready to review them.</p>
     <div id="squareProductsList"></div>
 
@@ -904,6 +906,8 @@ async function loadSquareProducts() {
       const card = document.createElement("div");
       card.className = "card";
       card.style.marginTop = "14px";
+      card.dataset.search = [product.item_name, product.variation_name, product.sku]
+        .filter(Boolean).join(" ").toLowerCase();
 
       const heading = document.createElement("div");
       heading.style.display = "flex";
@@ -965,6 +969,19 @@ async function loadSquareProducts() {
       label.appendChild(priceInput);
       card.appendChild(label);
 
+      const valuePreview = document.createElement("p");
+      valuePreview.className = "muted";
+      valuePreview.style.marginTop = "0";
+      function updateBRMValuePreview() {
+        const brmAmount = Number(priceInput.value);
+        valuePreview.textContent = Number.isSafeInteger(brmAmount) && brmAmount > 0
+          ? brmAmount.toLocaleString() + " BRM = $" + (brmAmount / 10).toFixed(2) + " off the Square item price"
+          : "Enter a whole BRM amount to preview its dollar discount.";
+      }
+      priceInput.addEventListener("input", updateBRMValuePreview);
+      updateBRMValuePreview();
+      card.appendChild(valuePreview);
+
       const eligibleLabel = document.createElement("label");
       eligibleLabel.style.display = "flex";
       eligibleLabel.style.alignItems = "center";
@@ -1016,6 +1033,15 @@ async function loadSquareProducts() {
     squareProductsStatus.textContent = error?.message || "Could not load the review catalog.";
   } finally {
     loadSquareProductsButton.disabled = false;
+  }
+  const searchInput = document.getElementById("squareProductSearch");
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      const term = searchInput.value.trim().toLowerCase();
+      squareProductsList.querySelectorAll(".card").forEach(card => {
+        card.hidden = term !== "" && !card.dataset.search.includes(term);
+      });
+    });
   }
 }
 loadSquareProductsButton.addEventListener("click", loadSquareProducts);
